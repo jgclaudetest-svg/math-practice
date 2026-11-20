@@ -563,11 +563,12 @@ var Kit = (function () {
     save('days', days); save('dirty', dirty);
     scheduleSync();
     paintSend();
+    autoSoon(15000);
   }
 
   /* ---------- Finish session: a real link that carries this device's unsent days to the practice log ----------
      Used only where the shared record cannot save (a visitor on an open link). The link holds counts and times, no names. */
-  var SEND_URL = '', sent = {};
+  var SEND_URL = 'https://script.google.com/macros/s/AKfycbzO-i8YGpLXTBD5IMtu0_kDS4yO_BUv6fefHPqN3z5kjR9Fbqk2WA0n32gcmT6q0W96/exec', sent = {};
   function sendReady() { return /^https:\/\/script\.google\.com\/|^http:\/\/127\.0\.0\.1:/.test(SEND_URL); }
   function sendOn() { return sendReady() && (dbState === 'off' || dbState === 'readonly'); }
   function hasWork(d) { return !!d && typeof d.last === 'string' && (num(d.answered) > 0 || (Array.isArray(d.tests) && d.tests.length > 0)); }
@@ -612,7 +613,7 @@ var Kit = (function () {
   function paintSend() {
     var bar = $('kit-send');
     if (!bar) return;
-    if (!sendOn()) { bar.hidden = true; return; }
+    if (!sendOn() || autoOn()) { bar.hidden = true; return; }
     var plan = sendPlan(), link = $('kit-send-link'), msg = $('kit-send-msg');
     if (!plan.used.length) { bar.hidden = true; return; }
     bar.hidden = false;
@@ -641,6 +642,46 @@ var Kit = (function () {
       save('sent', sent); save('sentAt', Date.now());
       setTimeout(paintSend, 600);
     });
+  }
+  /* ---------- Automatic sending ----------
+     On a plain web page (not inside a Claude artifact) the same numbers go to the practice log by themselves:
+     about 15 seconds after practice, when the page is hidden or closed, and on the next visit if a send was missed.
+     A day counts as sent only when the log answers ok, so a failed send is tried again. */
+  var AUTO = !window.claude && typeof fetch === 'function', autoTimer = null, autoBusy = false, autoFails = 0;
+  function autoOn() { return AUTO && sendReady() && dbState === 'off'; }
+  function autoSoon(ms) {
+    if (!autoOn() || autoTimer) return;
+    autoTimer = setTimeout(function () { autoTimer = null; autoSend(); }, ms);
+  }
+  function autoSend() {
+    if (!autoOn() || autoBusy) return;
+    var plan = sendPlan(), marks = {};
+    if (!plan.unsent.length || !plan.used.length) return;
+    plan.used.forEach(function (k) { marks[k] = days[k].last; });
+    autoBusy = true;
+    function done(ok) {
+      autoBusy = false;
+      if (ok) {
+        autoFails = 0;
+        Object.keys(marks).forEach(function (k) { sent[k] = marks[k]; });
+        save('sent', sent); save('sentAt', Date.now());
+        if (sendPlan().unsent.length) autoSoon(15000);
+      } else {
+        autoFails++;
+        autoSoon(Math.min(300000, 30000 * autoFails));
+      }
+      paintSource();
+    }
+    try {
+      fetch(plan.url + '&f=json', { mode: 'cors', credentials: 'omit', cache: 'no-store', keepalive: true })
+        .then(function (r) { return r.json(); })
+        .then(function (j) { done(!!(j && j.ok)); }, function () { done(false); });
+    } catch (e) { done(false); }
+  }
+  function autoNow() {
+    if (!autoOn()) return;
+    if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
+    autoSend();
   }
   /* recAnswer(key, ok, dtMs): one graded answer on one item. key must be an item key from init. */
   function recAnswer(key, ok, dt) {
@@ -715,11 +756,17 @@ var Kit = (function () {
       userDone.then(function (ok) { paintSource(); sharedResolve({ db: db, canWrite: ok !== false }); });
     }, function () { dbState = 'off'; paintSource(); sharedResolve({ db: null, canWrite: false }); });
   }
+  function autoNote() {
+    var at = load('sentAt', 0), when = at ? new Date(at).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+    return 'This report covers practice on this device. The same numbers are sent to the practice log for a parent to see.' +
+      (autoFails ? ' The last send did not go through. It will try again.' : (when ? ' Last sent ' + when + '.' : ''));
+  }
   function paintSource() {
     var el = $('kit-source'), t;
     paintSend();
     if (!el) return;
     if (dbState === 'pending') t = 'Checking the shared record.';
+    else if (autoOn()) t = autoNote();
     else if (sendOn()) t = 'This report covers this device only. Practice is not saved anywhere else until you tap Finish session at the top of the page.';
     else if (dbState === 'off') t = 'This report covers practice on this device only. It stays here between visits unless the browser\'s website data is cleared.';
     else if (dbState === 'readonly') t = 'This device cannot save to the shared record, so its practice stays on this device. Ask the owner of this page for Contributor or Editor access.';
@@ -859,12 +906,13 @@ var Kit = (function () {
       t.addEventListener('click', function () { show(t.dataset.view, true); });
     });
     window.addEventListener('hashchange', function () { show(location.hash.replace('#', ''), false); });
-    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flush(); });
-    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') { flush(); autoNow(); } });
+    window.addEventListener('pagehide', function () { flush(); autoNow(); });
     mountSend();
     paintSource();
     show(location.hash.replace('#', ''), false);
     initShared();
+    autoSoon(3000);
   }
 
   return {
