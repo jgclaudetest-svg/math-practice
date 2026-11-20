@@ -1,0 +1,1058 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Exact Trig Values</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+Math&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+  /* Layout: one narrow working column (the drill stage on graph paper, answer keys under it);
+     the progress grid rides alongside on wide screens and drops below on a phone.
+     Tables follow the tutor's sheet: angles down the side, sin / cos / tan across. */
+  :root {
+    --bg: #EDF1F7;
+    --surface: #FFFFFF;
+    --sunk: #E1E7F0;
+    --ink: #14223A;
+    --muted: #55657F;
+    --line: #C3CEDF;
+    --grid: rgba(29, 78, 216, 0.07);
+    --accent: #1D4ED8;
+    --on-accent: #FFFFFF;
+    --mark: #FFE066;
+    --on-mark: #14223A;
+    --good: #157F52;
+    --good-bg: #DDF3E8;
+    --warn: #8A5A00;
+    --warn-bg: #FBEFD2;
+    --bad: #BE3A2B;
+    --bad-bg: #FBE4E0;
+    --font-display: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+    --font-body: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-math: "STIX Two Math", "Cambria Math", "Latin Modern Math", "Noto Sans Math", math, serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0E1626; --surface: #172238; --sunk: #111B2E; --ink: #E7EDF8; --muted: #9BAAC4;
+      --line: #2E3E5C; --grid: rgba(142, 168, 255, 0.07); --accent: #8EA8FF; --on-accent: #0E1626;
+      --mark: #F2CF4A; --on-mark: #14223A; --good: #5AD19A; --good-bg: #12382B;
+      --warn: #F0B94A; --warn-bg: #3A2D10; --bad: #FF8C7A; --bad-bg: #44201C; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E1626; --surface: #172238; --sunk: #111B2E; --ink: #E7EDF8; --muted: #9BAAC4;
+    --line: #2E3E5C; --grid: rgba(142, 168, 255, 0.07); --accent: #8EA8FF; --on-accent: #0E1626;
+    --mark: #F2CF4A; --on-mark: #14223A; --good: #5AD19A; --good-bg: #12382B;
+    --warn: #F0B94A; --warn-bg: #3A2D10; --bad: #FF8C7A; --bad-bg: #44201C; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: var(--font-body); font-size: 16px; line-height: 1.5;
+  }
+  .wrap {
+    max-width: 920px; margin: 0 auto; padding-block: 28px 56px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    display: flex; flex-direction: column; gap: 22px;
+  }
+  math { font-family: var(--font-math); }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:disabled { cursor: default; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  /* Header */
+  .head { display: flex; flex-direction: column; gap: 6px; }
+  .head h1 {
+    font-family: var(--font-display); font-weight: 700; font-size: clamp(1.7rem, 5vw, 2.3rem);
+    line-height: 1.1; margin: 0; letter-spacing: -0.01em; text-wrap: balance;
+  }
+  .head p { margin: 0; color: var(--muted); max-width: 60ch; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 2px 6px; flex-wrap: wrap; border-bottom: 1.5px solid var(--line); }
+  .tab {
+    background: none; border: 0; border-bottom: 3px solid transparent; margin-bottom: -1.5px;
+    padding: 10px 12px; font-family: var(--font-display); font-weight: 500; font-size: 1rem; color: var(--muted);
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+
+  .sendbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 14px; font-size: .92rem; color: var(--muted); }
+  .sendbar span { flex: 1 1 200px; min-width: 0; }
+  .sendlink { background: var(--accent); color: var(--on-accent); border-radius: 10px; padding: 11px 16px; font-family: var(--font-display); font-weight: 700; font-size: .95rem; text-decoration: none; white-space: nowrap; }
+
+  /* Shared pieces */
+  .work { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  @media (min-width: 820px) {
+    .work { grid-template-columns: minmax(0, 1fr) 270px; align-items: start; }
+    .work.tw { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; }
+  }
+  .main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+  .stage {
+    background-color: var(--surface);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 22px 22px; background-position: -1px -1px;
+    border: 1.5px solid var(--line); border-radius: 14px;
+    min-height: 190px; padding: 22px 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    transition: border-color .15s;
+  }
+  .stage.ok { border-color: var(--good); }
+  .stage.no { border-color: var(--bad); }
+  .prompt { font-size: clamp(2rem, 9vw, 3.1rem); line-height: 1.1; }
+  .deg {
+    font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+    background: var(--surface); padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .feedback { min-height: 3.1em; font-size: .95rem; color: var(--muted); }
+  .feedback b { color: var(--ink); font-weight: 600; }
+  .feedback.good b { color: var(--good); }
+  .feedback.bad b { color: var(--bad); }
+
+  .keypad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .key {
+    min-height: 62px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px;
+    font-size: 1.25rem; display: flex; align-items: center; justify-content: center; padding: 4px;
+    transition: border-color .12s, background-color .12s, transform .06s;
+  }
+  .key:hover:not(:disabled) { border-color: var(--accent); }
+  .key:active:not(:disabled) { transform: scale(.97); }
+  .key:disabled { opacity: .55; }
+  .key.right { background: var(--good-bg); border-color: var(--good); opacity: 1; }
+  .key.wrong { background: var(--bad-bg); border-color: var(--bad); opacity: 1; }
+  .undef { font-family: var(--font-body); font-size: .8rem; font-weight: 500; }
+
+  .primary {
+    background: var(--accent); color: var(--on-accent); border: 0; border-radius: 10px;
+    padding: 13px 20px; font-family: var(--font-display); font-weight: 700; font-size: 1rem;
+  }
+  .primary:disabled { background: var(--sunk); color: var(--muted); }
+  .ghost {
+    background: none; border: 1.5px solid var(--line); border-radius: 10px; padding: 11px 16px;
+    font-weight: 500; font-size: .95rem;
+  }
+  .ghost:hover { border-color: var(--accent); }
+  .row { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+
+  /* Progress side panel */
+  .side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .stats, .tiles { display: flex; flex-wrap: wrap; gap: 18px 30px; }
+  .stat { display: flex; flex-direction: column; }
+  .stat .n { font-family: var(--font-display); font-weight: 700; font-size: 1.7rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat .n small { font-size: 1rem; font-weight: 500; color: var(--muted); }
+  .stat .l { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: 5px; }
+  .mgrid { border-collapse: separate; border-spacing: 4px; width: 100%; table-layout: fixed; margin: -4px; }
+  .mgrid th { font-weight: 400; font-size: .9rem; padding: 0; font-family: var(--font-math); }
+  .mgrid th.ang { text-align: left; width: 44px; }
+  .mgrid td { padding: 0; }
+  .lv { display: block; height: 22px; border-radius: 5px; border: 1.5px solid var(--line); background: var(--sunk); }
+  .lv1 { background: color-mix(in srgb, var(--accent) 25%, var(--surface)); border-color: transparent; }
+  .lv2 { background: color-mix(in srgb, var(--accent) 58%, var(--surface)); border-color: transparent; }
+  .lv3 { background: var(--accent); border-color: transparent; }
+  .lv.now { outline: 2.5px solid var(--ink); outline-offset: 1px; }
+  .legend { display: flex; align-items: center; gap: 6px; font-size: .75rem; color: var(--muted); }
+  .legend .lv { width: 18px; height: 14px; border-radius: 4px; flex: none; }
+  .note { font-size: .85rem; color: var(--muted); margin: 0; max-width: 65ch; }
+  .link { background: none; border: 0; padding: 0; color: var(--muted); font-size: .85rem; text-decoration: underline; text-underline-offset: 3px; align-self: flex-start; }
+  .link:hover { color: var(--ink); }
+
+  /* Table test */
+  .tbar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 20px; }
+  .clock { font-family: var(--font-display); font-weight: 700; font-size: 2.2rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .goal { color: var(--muted); font-size: .9rem; font-variant-numeric: tabular-nums; }
+  .goal b { color: var(--ink); font-weight: 600; }
+  .blank { border-collapse: separate; border-spacing: 5px; width: 100%; table-layout: fixed; margin: -5px; }
+  .blank th { font-weight: 400; padding: 0; font-size: 1.05rem; font-family: var(--font-math); }
+  .blank th.ang { width: 62px; text-align: left; font-family: inherit; }
+  .blank th.ang small { display: block; font-size: .66rem; color: var(--muted); letter-spacing: .04em; font-variant-numeric: tabular-nums; font-family: var(--font-body); }
+  .blank td { padding: 0; }
+  .cell {
+    width: 100%; min-height: 52px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 8px;
+    font-size: 1.05rem; display: flex; align-items: center; justify-content: center; padding: 2px; position: relative;
+  }
+  .cell.sel { border-color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+  .cell.right { background: var(--good-bg); border-color: var(--good); }
+  .cell.wrong { background: var(--bad-bg); border-color: var(--bad); }
+  .cell.wrong::after { content: "\2715"; position: absolute; top: 2px; right: 6px; font-size: .62rem; color: var(--bad); font-family: var(--font-body); }
+  .check { display: flex; align-items: center; gap: 8px; font-size: .9rem; color: var(--muted); }
+  .check input { width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+
+  /* The pattern */
+  .prose { display: flex; flex-direction: column; gap: 26px; }
+  .prose section { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .prose h2, .rep h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; margin: 0; text-wrap: balance; }
+  .prose p { margin: 0; max-width: 65ch; }
+  .scroll { overflow-x: auto; }
+  .ptable { border-collapse: collapse; min-width: 400px; width: 100%; max-width: 620px; background: var(--surface); border: 1.5px solid var(--line); }
+  .ptable th, .ptable td { border-bottom: 1px solid var(--line); padding: 7px 6px; text-align: center; font-size: 1.05rem; }
+  .ptable tr:last-child th, .ptable tr:last-child td { border-bottom: 0; }
+  .ptable th { font-weight: 500; }
+  .ptable thead th { background: var(--sunk); font-size: .8rem; color: var(--muted); line-height: 1.25; }
+  .ptable td.pat { background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 22px 22px; }
+  mn.hl { background: var(--mark); color: var(--on-mark); padding: 0 .12em; border-radius: 2px; }
+  .tris { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .tri { background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .tri svg { width: 100%; max-width: 280px; height: auto; align-self: center; }
+  .tri p { font-size: .92rem; color: var(--muted); }
+  .tri .shape { fill: color-mix(in srgb, var(--accent) 10%, var(--surface)); stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
+  .tri .sq { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+  .tri text { fill: var(--ink); font-family: var(--font-math); font-size: 15px; }
+  .tri text.ang { fill: var(--accent); font-size: 12.5px; }
+
+  /* Report */
+  .rep { display: flex; flex-direction: column; gap: 26px; }
+  .rep section { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .rep p { margin: 0; max-width: 65ch; }
+  .flags { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-width: 70ch; }
+  .flags li { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+  .pill { font-size: .68rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; text-align: center; padding: 2px 0; border-radius: 4px; }
+  .pill.bad { background: var(--bad-bg); color: var(--bad); }
+  .pill.warn { background: var(--warn-bg); color: var(--warn); }
+  .pill.ok { background: var(--good-bg); color: var(--good); }
+  .vtable, .log { border-collapse: collapse; background: var(--surface); border: 1.5px solid var(--line); width: 100%; }
+  .vtable { max-width: 520px; table-layout: fixed; }
+  .vtable th, .vtable td, .log th, .log td { border-bottom: 1px solid var(--line); padding: 7px 8px; font-variant-numeric: tabular-nums; }
+  .vtable tr:last-child th, .vtable tr:last-child td, .log tr:last-child td { border-bottom: 0; }
+  .vtable thead th, .log thead th { background: var(--sunk); font-size: .78rem; font-weight: 500; color: var(--muted); }
+  .vtable thead th { font-family: var(--font-math); font-size: .95rem; color: var(--ink); }
+  .vtable th.ang { text-align: left; font-weight: 400; font-family: var(--font-math); width: 62px; }
+  .vtable td { text-align: center; font-size: .88rem; line-height: 1.3; border-left: 1px solid var(--line); }
+  .vtable td small { display: block; font-size: .7rem; letter-spacing: .05em; text-transform: uppercase; font-weight: 600; }
+  .vtable td.miss { background: var(--bad-bg); } .vtable td.miss small { color: var(--bad); }
+  .vtable td.slow { background: var(--warn-bg); } .vtable td.slow small { color: var(--warn); }
+  .vtable td.ok small { color: var(--good); }
+  .vtable td.none { color: var(--muted); }
+  .log { min-width: 520px; }
+  .log th, .log td { text-align: right; font-size: .9rem; white-space: nowrap; }
+  .log th:first-child, .log td:first-child { text-align: left; }
+  .log th:last-child, .log td:last-child { text-align: left; padding-left: 18px; }
+  .empty { color: var(--muted); }
+
+  @media (max-width: 420px) {
+    .key { font-size: 1.12rem; min-height: 56px; }
+    .cell { font-size: .98rem; min-height: 48px; }
+    .blank th.ang { width: 52px; }
+    .tab { padding: 9px 9px; font-size: .95rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <h1>Exact Trig Values</h1>
+    <p>The values of sin, cos and tan at 0, π/6, π/4, π/3, π/2 and π. Drill them until each answer takes under three seconds.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" id="tab-cards" data-view="cards" aria-selected="true">Cards</button>
+    <button class="tab" role="tab" id="tab-table" data-view="table" aria-selected="false">Table test</button>
+    <button class="tab" role="tab" id="tab-pattern" data-view="pattern" aria-selected="false">The pattern</button>
+    <button class="tab" role="tab" id="tab-report" data-view="report" aria-selected="false">Report</button>
+  </nav>
+  <div class="sendbar" id="send" hidden><span id="send-msg"></span><a class="sendlink" id="send-link" target="_blank" rel="noopener" href="#">Finish session</a></div>
+
+  <!-- Cards -->
+  <section id="view-cards" role="tabpanel" aria-labelledby="tab-cards">
+    <div class="work">
+      <div class="main">
+        <div class="stage" id="stage">
+          <div class="prompt" id="prompt" aria-live="polite"></div>
+          <div class="deg" id="deg"></div>
+        </div>
+        <div class="feedback" id="feedback" aria-live="polite">Tap the exact value. Keys 1 to 9 work too.</div>
+        <div class="keypad" id="keys-cards"></div>
+        <button class="primary" id="next" hidden>Next card</button>
+      </div>
+      <aside class="side" aria-label="Progress">
+        <div class="stats">
+          <div class="stat"><span class="n"><span id="auto">0</span><small>/18</small></span><span class="l">Automatic</span></div>
+          <div class="stat"><span class="n" id="streak">0</span><span class="l">Streak</span></div>
+        </div>
+        <table class="mgrid" id="mgrid" aria-label="Progress on each value"></table>
+        <div class="legend"><span>New</span><span class="lv"></span><span class="lv lv1"></span><span class="lv lv2"></span><span class="lv lv3"></span><span>Automatic</span></div>
+        <p class="note">A value turns automatic after three right answers in a row, the last one in under 3 seconds. A miss sends it back to new and brings it up again two cards later.</p>
+        <button class="link" id="reset">Reset this grid</button>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Table test -->
+  <section id="view-table" role="tabpanel" aria-labelledby="tab-table" hidden>
+    <div class="work tw">
+      <div class="main">
+        <div class="tbar">
+          <div class="clock" id="clock" aria-label="Time">0:00.0</div>
+          <div class="goal">Goal: <b>18 of 18 in under 0:45</b> · Best: <b id="best">none yet</b></div>
+        </div>
+        <table class="blank" id="blank" aria-label="Blank values table"></table>
+      </div>
+      <div class="main">
+        <div class="feedback" id="tresult" aria-live="polite"></div>
+        <div class="keypad" id="keys-table"></div>
+        <div class="row">
+          <button class="primary" id="check" disabled>Check</button>
+          <button class="ghost" id="again">Start over</button>
+        </div>
+        <label class="check" for="jump"><input type="checkbox" id="jump"> Jump around (random order)</label>
+      </div>
+    </div>
+  </section>
+
+  <!-- The pattern -->
+  <section id="view-pattern" role="tabpanel" aria-labelledby="tab-pattern" hidden>
+    <div class="prose">
+      <section>
+        <h2>Sine counts up under the root</h2>
+        <p>For the first five angles, write √0, √1, √2, √3, √4, each over 2. Three of them simplify. That is the sine column.</p>
+        <p>Cosine is the same list backwards. Tangent is sine divided by cosine. So there is one list to remember, not a table of separate facts.</p>
+        <div class="scroll"><table class="ptable" id="ptable"></table></div>
+        <p>The last row, π, sits outside the pattern. On the unit circle π is the far left point, (−1, 0). Cosine is the x value and sine is the y value, so cos π = −1 and sin π = 0.</p>
+      </section>
+      <section>
+        <h2>Where the numbers come from</h2>
+        <p>Two triangles give every value. Sine is the side opposite the angle divided by the longest side. Cosine is the side next to the angle divided by the longest side.</p>
+        <div class="tris">
+          <div class="tri">
+            <svg viewBox="0 0 250 170" role="img" aria-label="Right triangle with angles π/6 and π/3 and sides 1, √3 and 2">
+              <polygon class="shape" points="30,135 203,135 203,35"></polygon>
+              <path class="sq" d="M191,135 v-12 h12"></path>
+              <text x="116" y="156" text-anchor="middle">√3</text>
+              <text x="213" y="90">1</text>
+              <text x="102" y="72" text-anchor="middle">2</text>
+              <text class="ang" x="70" y="131">π/6</text>
+              <text class="ang" x="198" y="68" text-anchor="end">π/3</text>
+            </svg>
+            <p>Across from the π/6 angle the side is 1, and the longest side is 2. So sin π/6 = 1/2 and cos π/6 = √3/2. Read it from the π/3 corner and the two swap.</p>
+          </div>
+          <div class="tri">
+            <svg viewBox="0 0 250 170" role="img" aria-label="Right triangle with two π/4 angles and sides 1, 1 and √2">
+              <polygon class="shape" points="55,135 155,135 155,35"></polygon>
+              <path class="sq" d="M143,135 v-12 h12"></path>
+              <text x="105" y="156" text-anchor="middle">1</text>
+              <text x="165" y="90">1</text>
+              <text x="90" y="76" text-anchor="middle">√2</text>
+              <text class="ang" x="82" y="131">π/4</text>
+              <text class="ang" x="151" y="68" text-anchor="end">π/4</text>
+            </svg>
+            <p>Both short sides are 1 and the longest side is √2. So sin π/4 and cos π/4 are both 1/√2, which is written √2/2.</p>
+          </div>
+        </div>
+      </section>
+      <section>
+        <h2>How to use this page</h2>
+        <p>Do the cards for five minutes a day. Pulling an answer out of memory makes it stick better than reading the table again. When all eighteen show as automatic, take the table test and try to beat your best time.</p>
+      </section>
+    </div>
+  </section>
+
+  <!-- Report -->
+  <section id="view-report" role="tabpanel" aria-labelledby="tab-report" hidden>
+    <div class="rep">
+      <div id="report-body" class="rep"></div>
+      <section>
+        <p class="note" id="source"></p>
+        <label class="check" for="norec"><input type="checkbox" id="norec"> Don't record practice on this device (for a parent trying it out)</label>
+      </section>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var ANG = [
+    { t: '0',   deg: 0,   m: '<mn>0</mn>' },
+    { t: 'π/6', deg: 30,  m: '<mfrac><mi>π</mi><mn>6</mn></mfrac>' },
+    { t: 'π/4', deg: 45,  m: '<mfrac><mi>π</mi><mn>4</mn></mfrac>' },
+    { t: 'π/3', deg: 60,  m: '<mfrac><mi>π</mi><mn>3</mn></mfrac>' },
+    { t: 'π/2', deg: 90,  m: '<mfrac><mi>π</mi><mn>2</mn></mfrac>' },
+    { t: 'π',   deg: 180, m: '<mi>π</mi>' }
+  ];
+  var V = {
+    m1:  { t: '−1',   m: '<mrow><mo>−</mo><mn>1</mn></mrow>' },
+    z:   { t: '0',    m: '<mn>0</mn>' },
+    h:   { t: '1/2',  m: '<mfrac><mn>1</mn><mn>2</mn></mfrac>' },
+    r22: { t: '√2/2', m: '<mfrac><msqrt><mn>2</mn></msqrt><mn>2</mn></mfrac>' },
+    r32: { t: '√3/2', m: '<mfrac><msqrt><mn>3</mn></msqrt><mn>2</mn></mfrac>' },
+    o:   { t: '1',    m: '<mn>1</mn>' },
+    r33: { t: '√3/3', m: '<mfrac><msqrt><mn>3</mn></msqrt><mn>3</mn></mfrac>' },
+    r3:  { t: '√3',   m: '<msqrt><mn>3</mn></msqrt>' },
+    u:   { t: 'undefined', m: null }
+  };
+  var KEYS = ['m1', 'z', 'h', 'r22', 'r32', 'o', 'r33', 'r3', 'u'];
+  var FN = ['sin', 'cos', 'tan'];
+  var ANS = {
+    sin: ['z', 'h', 'r22', 'r32', 'o', 'z'],
+    cos: ['o', 'r32', 'r22', 'h', 'z', 'm1'],
+    tan: ['z', 'r33', 'o', 'r3', 'u', 'z']
+  };
+  var SIMP = ['√0/2 = 0', '√1/2 = 1/2', '√2/2', '√3/2', '√4/2 = 1'];
+  var A = 6, N = 18;
+
+  function $(id) { return document.getElementById(id); }
+  function load(k, d) { try { var s = localStorage.getItem(k); return s == null ? d : JSON.parse(s); } catch (e) { return d; } }
+  function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function math(inner) { return '<math displaystyle="true">' + inner + '</math>'; }
+  function valHTML(k) { return V[k].m ? math(V[k].m) : '<span class="undef">undefined</span>'; }
+  function fnOf(c) { return FN[Math.floor(c / A)]; }
+  function answerOf(c) { return ANS[fnOf(c)][c % A]; }
+
+  /*PURE-START*/
+  function fmt(ms) {
+    var t = Math.floor(ms / 100), m = Math.floor(t / 600), s = Math.floor((t % 600) / 10), d = t % 10;
+    return m + ':' + (s < 10 ? '0' : '') + s + '.' + d;
+  }
+  function num(x) { return (typeof x === 'number' && isFinite(x) && x > 0) ? x : 0; }
+  function dayNum(s) { var p = s.split('-'); return Math.round(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000); }
+  function fmtDate(s) {
+    var p = s.split('-');
+    return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+  function cardName(c) { return FN[Math.floor(c / A)] + ' ' + ANG[c % A].t; }
+  function secs(ms) { return (ms / 1000).toFixed(1) + ' s'; }
+  function pct(x) { return Math.round(x * 100) + '%'; }
+  function listOf(items, max) {
+    var shown = items.slice(0, max).join(', ');
+    return items.length > max ? shown + ', and ' + (items.length - max) + ' more' : shown;
+  }
+
+  /* Turns the saved day records into the report: usage, time, and what to work on. */
+  function summarize(docs, todayStr) {
+    var t0 = dayNum(todayStr), byDate = {}, per = [], latest = null, best = null, c;
+    for (c = 0; c < N; c++) per.push({ n: 0, n7: 0, w7: 0, ok7: 0, ms7: 0, st: 'none', avg: 0 });
+
+    docs.forEach(function (d) {
+      if (!d || typeof d.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(d.date)) return;
+      var age = Math.max(0, t0 - dayNum(d.date));
+      var day = byDate[d.date] || (byDate[d.date] = { date: d.date, age: age, answered: 0, correct: 0, msCorrect: 0, activeMs: 0, tables: [] });
+      day.answered += num(d.answered); day.correct += num(d.correct);
+      day.msCorrect += num(d.msCorrect); day.activeMs += num(d.activeMs);
+      (Array.isArray(d.tables) ? d.tables : []).forEach(function (t) {
+        if (!t) return;
+        var s = Math.min(num(t.s), N), ms = num(t.ms);
+        if (!ms) return;
+        day.tables.push({ s: s, ms: ms });
+        if (s === N && (best === null || ms < best)) best = ms;
+      });
+      var cards = (d.cards && typeof d.cards === 'object') ? d.cards : {};
+      for (var i = 0; i < N; i++) {
+        var a = cards['c' + i];
+        if (!Array.isArray(a)) continue;
+        var n = num(a[0]), w = Math.min(num(a[1]), n);
+        per[i].n += n;
+        if (age < 7) { per[i].n7 += n; per[i].w7 += w; per[i].ok7 += n - w; per[i].ms7 += num(a[2]); }
+      }
+      if (typeof d.last === 'string' && (!latest || d.last > latest.last)) latest = d;
+    });
+
+    var log = Object.keys(byDate).sort().reverse().map(function (k) { return byDate[k]; })
+      .filter(function (d) { return d.answered > 0 || d.tables.length > 0; });
+    var out = { empty: !log.length, days7: 0, ms7: 0, auto: 0, best: best, flags: [], per: per, log: log.slice(0, 14) };
+    if (latest && Array.isArray(latest.boxes)) latest.boxes.forEach(function (b) { if (b === 3) out.auto++; });
+    if (out.empty) return out;
+
+    var tables7 = 0, lastTable = null, firstAge = 0, lastAge = log[0].age;
+    log.forEach(function (d) {
+      if (d.age > firstAge) firstAge = d.age;
+      if (d.age < 7) { out.days7++; out.ms7 += d.activeMs; tables7 += d.tables.length; }
+      if (!lastTable && d.tables.length) lastTable = d.tables[d.tables.length - 1];
+    });
+    var F = out.flags;
+
+    /* Usage */
+    if (lastAge >= 3) F.push({ lv: 'bad', text: 'No practice for ' + lastAge + ' days. The last session was ' + fmtDate(log[0].date) + '.' });
+    else if (out.days7 >= 5) F.push({ lv: 'ok', text: out.days7 + ' practice days in the last 7. That is on plan.' });
+    else if (firstAge >= 6) F.push({ lv: 'warn', text: out.days7 + ' practice ' + (out.days7 === 1 ? 'day' : 'days') + ' in the last 7. The plan calls for 5.' });
+
+    /* Time */
+    var perDay = out.days7 ? out.ms7 / out.days7 : 0;
+    if (out.days7 && perDay < 240000) {
+      var mins = Math.round(perDay / 60000);
+      F.push({ lv: 'warn', text: 'Sessions are short: ' + (mins < 1 ? 'under a minute' : 'about ' + mins + ' min') + ' on practice days. The plan calls for 5 minutes of drill a day.' });
+    }
+
+    /* Weak values, last 7 days */
+    var missed = [], slow = [], untested = [];
+    for (c = 0; c < N; c++) {
+      var p = per[c];
+      if (p.n === 0) untested.push(c);
+      if (p.n7 === 0) continue;
+      p.avg = p.ok7 ? p.ms7 / p.ok7 : 0;
+      if (p.w7 / p.n7 >= 0.25) { p.st = 'miss'; if (p.n7 >= 2) missed.push(c); }
+      else if (p.avg > 3000) { p.st = 'slow'; if (p.ok7 >= 2) slow.push(c); }
+      else p.st = 'ok';
+    }
+    missed.sort(function (x, y) { return per[y].w7 / per[y].n7 - per[x].w7 / per[x].n7; });
+    slow.sort(function (x, y) { return per[y].avg - per[x].avg; });
+    if (missed.length) F.push({ lv: 'bad', text: 'Missed most: ' + listOf(missed.map(function (i) { return cardName(i) + ' (' + per[i].w7 + ' of ' + per[i].n7 + ' wrong)'; }), 5) + '.' });
+    if (slow.length) F.push({ lv: 'warn', text: 'Right but slow: ' + listOf(slow.map(function (i) { return cardName(i) + ' (' + secs(per[i].avg) + ')'; }), 5) + '. The target is under 3 seconds.' });
+
+    /* One column weaker than the others */
+    var cols = FN.map(function (f, fi) {
+      var n = 0, w = 0;
+      for (var a = 0; a < A; a++) { n += per[fi * A + a].n7; w += per[fi * A + a].w7; }
+      return { f: f, n: n, acc: n ? 1 - w / n : 0 };
+    }).filter(function (x) { return x.n >= 6; });
+    if (cols.length === FN.length) {
+      cols.sort(function (x, y) { return x.acc - y.acc; });
+      var lo = cols[0], hi = cols[cols.length - 1];
+      if (hi.acc - lo.acc >= 0.15) F.push({ lv: 'warn', text: 'The ' + lo.f + ' column is the weakest: ' + pct(lo.acc) + ' right, against ' + pct(hi.acc) + ' for ' + hi.f + '.' });
+    }
+    if (untested.length) F.push({ lv: 'warn', text: 'Not practiced yet: ' + listOf(untested.map(cardName), 6) + '.' });
+
+    /* Table test */
+    if (!tables7) F.push({ lv: 'warn', text: 'No table test in the last 7 days. The plan has one every Friday.' });
+    else if (best === null) F.push({ lv: 'warn', text: 'No perfect table yet. The latest was ' + lastTable.s + ' of ' + N + ' in ' + fmt(lastTable.ms) + '.' });
+    else if (best >= 45000) F.push({ lv: 'warn', text: 'The best perfect table is ' + fmt(best) + '. The goal is under 0:45.' });
+    else F.push({ lv: 'ok', text: 'Table goal met: a perfect table in ' + fmt(best) + '.' });
+
+    if (out.auto === N) F.push({ lv: 'ok', text: 'All ' + N + ' values are automatic.' });
+    return out;
+  }
+  /*PURE-END*/
+
+  function buildKeys(box, onPick) {
+    KEYS.forEach(function (k) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'key'; b.dataset.k = k;
+      b.setAttribute('aria-label', V[k].t);
+      b.innerHTML = valHTML(k);
+      b.addEventListener('click', function () { onPick(k, b); });
+      box.appendChild(b);
+    });
+  }
+  function keysOf(box) { return Array.prototype.slice.call(box.querySelectorAll('.key')); }
+
+  /* ---------- Records ---------- */
+  var DEV = load('tv.dev', null);
+  if (typeof DEV !== 'string' || !/^[a-z0-9]{6}$/.test(DEV)) {
+    DEV = ''; for (var di = 0; di < 6; di++) DEV += 'abcdefghijkmnpqrstuvwxyz23456789'.charAt(Math.floor(Math.random() * 32));
+    save('tv.dev', DEV);
+  }
+  var days = load('tv.days', {});
+  if (!days || typeof days !== 'object' || Array.isArray(days)) days = {};
+  var dirty = load('tv.dirty', {});
+  if (!dirty || typeof dirty !== 'object' || Array.isArray(dirty)) dirty = {};
+  var norec = load('tv.norec', false) === true;
+  var lastAct = Date.now();
+  var boxes, best;              // set below, read by the record snapshot
+
+  function todayStr() {
+    var d = new Date(), m = d.getMonth() + 1, x = d.getDate();
+    return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (x < 10 ? '0' : '') + x;
+  }
+  function dayDoc() {
+    var k = todayStr(), d = days[k];
+    if (!d || typeof d !== 'object' || d.date !== k) {
+      d = days[k] = { v: 1, date: k, device: DEV, answered: 0, correct: 0, msCorrect: 0, activeMs: 0, cards: {}, tables: [], first: new Date().toISOString() };
+      var keys = Object.keys(days).sort();
+      while (keys.length > 90) { var old = keys.shift(); delete days[old]; delete dirty[old]; }
+    }
+    if (!d.cards || typeof d.cards !== 'object') d.cards = {};
+    if (!Array.isArray(d.tables)) d.tables = [];
+    return d;
+  }
+  function stamp(d, addMs) {
+    var auto = 0;
+    for (var i = 0; i < N; i++) if (boxes[i] === 3) auto++;
+    d.activeMs = num(d.activeMs) + Math.round(addMs);
+    d.last = new Date().toISOString();
+    d.boxes = boxes.slice(); d.auto = auto; d.best = best;
+    lastAct = Date.now();
+    dirty[d.date] = 1;
+    save('tv.days', days); save('tv.dirty', dirty);
+    scheduleSync();
+    paintSend();
+  }
+
+  /* Finish session: a real link that carries this device's unsent days to the practice log.
+     Used only where the shared record cannot save (a visitor on an open link). Counts and times only, no names. */
+  var SEND_URL = '__SEND_URL__', sent = load('tv.sent', {});
+  if (!sent || typeof sent !== 'object' || Array.isArray(sent)) sent = {};
+  function sendOn() { return /^https:\/\/script\.google\.com\/|^http:\/\/127\.0\.0\.1:/.test(SEND_URL) && (dbState === 'off' || dbState === 'readonly'); }
+  function hasWork(d) { return !!d && typeof d.last === 'string' && (num(d.answered) > 0 || (Array.isArray(d.tables) && d.tables.length > 0)); }
+  function encodeDay(d, maxItems) {
+    var list = [], missed = [], slow = [];
+    Object.keys(d.cards || {}).forEach(function (k) {
+      var a = d.cards[k], c = +String(k).slice(1);
+      if (!Array.isArray(a) || !/^c\d{1,2}$/.test(k) || !(c >= 0 && c < N)) return;
+      var n = num(a[0]), w = Math.min(num(a[1]), n), ms = Math.round(num(a[2])), ok = n - w, name = cardName(c);
+      if (!n) return;
+      list.push({ k: k, n: n, w: w, ms: ms });
+      if (n >= 2 && w / n >= 0.25) missed.push([w / n, name + ' ' + w + '/' + n]);
+      else if (ok >= 2 && ms / ok > 3000) slow.push([ms / ok, name + ' ' + (ms / ok / 1000).toFixed(1) + 's']);
+    });
+    list.sort(function (x, y) { return y.w - x.w || y.n - x.n; });
+    function top(arr) { return arr.sort(function (x, y) { return y[0] - x[0]; }).slice(0, 4).map(function (x) { return x[1]; }).join(', '); }
+    var tests = (Array.isArray(d.tables) ? d.tables : []).slice(-10).map(function (t) { return Math.min(num(t.s), N) + '.' + N + '.' + Math.round(num(t.ms)); }).join('*');
+    var x = [String(d.date).replace(/-/g, ''), num(d.answered), num(d.correct), Math.round(num(d.msCorrect)), Math.round(num(d.activeMs)), num(d.auto), N, tests,
+      list.slice(0, maxItems).map(function (i) { return i.k + '.' + i.n + '.' + i.w + '.' + i.ms; }).join('*')].join('~');
+    return { x: x, m: top(missed), s: top(slow) };
+  }
+  function sendPlan() {
+    var keys = Object.keys(days).filter(function (k) { return hasWork(days[k]); }).sort().reverse(), today = todayStr();
+    var unsent = keys.filter(function (k) { return sent[k] !== days[k].last; });
+    var pick = keys.filter(function (k) { return k === today || sent[k] !== days[k].last; }).slice(0, 3);
+    var url = SEND_URL + '?v=1&p=' + encodeURIComponent(document.title || 'Exact Trig Values') + '&d=' + DEV, used = [];
+    pick.forEach(function (k, i) {
+      var cap = 60, part = '', n = i + 1;
+      do {
+        var e = encodeDay(days[k], cap);
+        part = '&x' + n + '=' + encodeURIComponent(e.x) + '&m' + n + '=' + encodeURIComponent(e.m) + '&s' + n + '=' + encodeURIComponent(e.s);
+        cap -= 10;
+      } while (url.length + part.length > 1900 && cap >= 0);
+      if (url.length + part.length > 1900) return;
+      url += part; used.push(k);
+    });
+    return { url: url, used: used, unsent: unsent };
+  }
+  function paintSend() {
+    var bar = $('send');
+    if (!bar) return;
+    if (!sendOn()) { bar.hidden = true; return; }
+    var plan = sendPlan(), link = $('send-link'), msg = $('send-msg');
+    if (!plan.used.length) { bar.hidden = true; return; }
+    bar.hidden = false;
+    link.href = plan.url;
+    if (plan.unsent.length) {
+      msg.textContent = plan.unsent.length === 1 ? 'This practice is not sent yet. Tap Finish session when you are done.' : 'Practice from ' + plan.unsent.length + ' days is not sent yet.';
+      link.textContent = 'Finish session';
+    } else {
+      var at = load('tv.sentAt', 0), when = at ? new Date(at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : '';
+      msg.textContent = 'Sent' + (when ? ' at ' + when : '') + '. If the new tab did not say Saved, send it again.';
+      link.textContent = 'Send again';
+    }
+  }
+  $('send-link').addEventListener('click', function () {
+    var plan = sendPlan();
+    plan.used.forEach(function (k) { sent[k] = days[k].last; });
+    save('tv.sent', sent); save('tv.sentAt', Date.now());
+    setTimeout(paintSend, 600);
+  });
+  function recAnswer(c, ok, dt) {
+    if (norec) return;
+    var d = dayDoc(), a = d.cards['c' + c];
+    if (!Array.isArray(a)) a = [0, 0, 0];
+    var ms = Math.min(Math.round(dt), 20000);
+    d.cards['c' + c] = [num(a[0]) + 1, num(a[1]) + (ok ? 0 : 1), num(a[2]) + (ok ? ms : 0)];
+    d.answered = num(d.answered) + 1;
+    if (ok) { d.correct = num(d.correct) + 1; d.msCorrect = num(d.msCorrect) + ms; }
+    stamp(d, Math.min(Date.now() - lastAct, 20000));
+  }
+  function recTable(score, ms, jump) {
+    if (norec) return;
+    var d = dayDoc();
+    if (d.tables.length < 40) d.tables.push({ s: score, ms: Math.round(ms), j: jump ? 1 : 0 });
+    stamp(d, Math.min(ms, 300000));
+  }
+
+  /* Shared record: one document per day per device, written a few seconds after practice pauses. */
+  var db = null, dbState = 'pending', remote = {}, remoteLoaded = false, remoteSlow = false;
+  var syncing = false, syncTimer = null, loadTimer = null;
+  function scheduleSync() {
+    if (!db || dbState !== 'on' || syncTimer) return;
+    syncTimer = setTimeout(flush, 12000);
+  }
+  function flush() {
+    clearTimeout(syncTimer); syncTimer = null;
+    if (!db || dbState !== 'on' || syncing) return;
+    var list = Object.keys(dirty).filter(function (k) { return days[k]; });
+    if (!list.length) return;
+    syncing = true;
+    var i = 0;
+    (function nextDoc() {
+      if (i >= list.length) { syncing = false; save('tv.dirty', dirty); return; }
+      var k = list[i++], body;
+      try { body = JSON.parse(JSON.stringify(days[k])); } catch (e) { nextDoc(); return; }
+      delete dirty[k];
+      var done;
+      try { done = db.doc('days/' + k + '_' + DEV).set(body); } catch (e) { done = Promise.reject(e); }
+      done.then(nextDoc, function (e) {
+        dirty[k] = 1; syncing = false; save('tv.dirty', dirty);
+        var code = e && e.code;
+        if (code === 'invalid_argument' || code === 'not_granted' || code === 'revoked' || code === 'transform_error') { dbState = 'readonly'; paintSource(); }
+      });
+    })();
+  }
+  function initShared() {
+    var c = window.claude;
+    if (!c || typeof c.use !== 'function') { dbState = 'off'; paintSource(); return; }
+    c.use('db').then(function (ns) {
+      if (!ns) { dbState = 'off'; paintSource(); return; }
+      db = ns; if (dbState === 'pending') dbState = 'on';
+      loadTimer = setTimeout(function () { if (!remoteLoaded) { remoteSlow = true; paintSource(); } }, 10000);
+      try {
+        db.collection('days').onSnapshot(function (snap) {
+          var m = {};
+          snap.docs.forEach(function (d) { var b = d.data(); if (b) m[d.id] = b; });
+          remote = m;
+          if (!snap.metadata || !snap.metadata.fromCache) { clearTimeout(loadTimer); remoteLoaded = true; remoteSlow = false; }
+          if (view === 'report') renderReport();
+        }, function () { clearTimeout(loadTimer); remoteSlow = true; paintSource(); });
+      } catch (e) { remoteSlow = true; }
+      paintSource();
+      if (Object.keys(dirty).length) scheduleSync();
+    }, function () { dbState = 'off'; paintSource(); });
+    c.use('user').then(function (u) {
+      if (!u || typeof u.can !== 'function') return;
+      return u.can('data.write').then(function (ok) { if (ok === false) { dbState = 'readonly'; paintSource(); } });
+    }).catch(function () {});
+  }
+  function paintSource() {
+    var t;
+    paintSend();
+    if (dbState === 'pending') t = 'Checking the shared record.';
+    else if (sendOn()) t = 'This report covers this device only. Practice is not saved anywhere else until you tap Finish session at the top of the page.';
+    else if (dbState === 'off') t = 'The shared record is not available in this view. This report covers this device only.';
+    else if (dbState === 'readonly') t = 'This device cannot save to the shared record, so its practice stays on this device. Ask the owner of this page for Contributor or Editor access.';
+    else if (remoteSlow) t = 'The shared record cannot be reached right now. This report may be missing practice from other devices.';
+    else if (!remoteLoaded) t = 'Checking the shared record.';
+    else t = 'This report combines practice from every device that can save to this page. It updates about 12 seconds after practice pauses.';
+    $('source').textContent = t;
+  }
+
+  /* ---------- Cards ---------- */
+  boxes = load('tv.boxes', null);
+  if (!Array.isArray(boxes) || boxes.length !== N) boxes = [];
+  for (var bi = 0; bi < N; bi++) { var bv = boxes[bi]; boxes[bi] = (bv === 1 || bv === 2 || bv === 3) ? bv : 0; }
+  best = load('tv.best', null);
+  if (typeof best !== 'number' || !(best > 0)) best = null;
+
+  var cs = { cur: -1, last: -1, count: 0, streak: 0, queue: [], t0: 0, locked: false, timer: null };
+  var keysCards = $('keys-cards');
+
+  function queued(c) { for (var i = 0; i < cs.queue.length; i++) if (cs.queue[i].c === c) return true; return false; }
+  function pick() {
+    for (var i = 0; i < cs.queue.length; i++) {
+      if (cs.queue[i].due <= cs.count && cs.queue[i].c !== cs.last) return cs.queue.splice(i, 1)[0].c;
+    }
+    var w = [8, 4, 2, 1], pool = [], total = 0;
+    for (var c = 0; c < N; c++) {
+      if (c === cs.last || queued(c)) continue;
+      total += w[boxes[c]]; pool.push([c, total]);
+    }
+    if (!pool.length) return cs.queue.shift().c;
+    var r = Math.random() * total;
+    for (var j = 0; j < pool.length; j++) if (r < pool[j][1]) return pool[j][0];
+    return pool[pool.length - 1][0];
+  }
+
+  function promptHTML(c, shown) {
+    var rhs = shown ? (V[shown].m || '<mtext>undefined</mtext>') : '<mo>?</mo>';
+    return math('<mi>' + fnOf(c) + '</mi><mspace width="0.3em"></mspace>' + ANG[c % A].m + '<mo>=</mo>' + rhs);
+  }
+  function explain(c) {
+    var f = fnOf(c), a = c % A, at = ANG[a].t;
+    if (a === 5) {
+      if (f === 'sin') return 'On the unit circle π is the far left point, (−1, 0). Sine is the y value, so sin π = 0.';
+      if (f === 'cos') return 'On the unit circle π is the far left point, (−1, 0). Cosine is the x value, so cos π = −1.';
+      return 'Tangent is sine ÷ cosine. At π that is 0 ÷ −1 = 0.';
+    }
+    if (f === 'sin') return 'Sine counts up under the root: √0, √1, √2, √3, √4, each over 2. ' + at + ' is angle number ' + (a + 1) + ', so it gets ' + SIMP[a] + '.';
+    if (f === 'cos') return 'Cosine is the sine list backwards, counting down from √4. ' + at + ' gets ' + SIMP[4 - a] + '.';
+    if (a === 4) return 'Tangent is sine ÷ cosine. At π/2 cosine is 0, and you cannot divide by 0, so tangent is undefined.';
+    return 'Tangent is sine ÷ cosine. At ' + at + ' that is ' + V[ANS.sin[a]].t + ' ÷ ' + V[ANS.cos[a]].t + ' = ' + V[ANS.tan[a]].t + '.';
+  }
+
+  function buildGrid() {
+    var h = '<tr><th class="ang"></th>';
+    FN.forEach(function (f) { h += '<th scope="col">' + f + '</th>'; });
+    h += '</tr>';
+    ANG.forEach(function (ang, a) {
+      h += '<tr><th class="ang" scope="row">' + ang.t + '</th>';
+      for (var f = 0; f < 3; f++) h += '<td><span class="lv" data-c="' + (f * A + a) + '"></span></td>';
+      h += '</tr>';
+    });
+    $('mgrid').innerHTML = h;
+  }
+  function paintGrid() {
+    var auto = 0;
+    Array.prototype.forEach.call($('mgrid').querySelectorAll('.lv'), function (el) {
+      var c = +el.dataset.c, lv = boxes[c];
+      el.className = 'lv' + (lv ? ' lv' + lv : '') + (c === cs.cur ? ' now' : '');
+      el.setAttribute('role', 'img');
+      el.setAttribute('aria-label', cardName(c) + ': level ' + lv + ' of 3');
+      if (lv === 3) auto++;
+    });
+    $('auto').textContent = auto;
+    $('streak').textContent = cs.streak;
+    return auto;
+  }
+
+  function showCard() {
+    clearTimeout(cs.timer);
+    cs.cur = pick(); cs.locked = false;
+    $('stage').className = 'stage';
+    $('prompt').innerHTML = promptHTML(cs.cur, null);
+    $('deg').textContent = ANG[cs.cur % A].deg + '°';
+    $('next').hidden = true;
+    keysOf(keysCards).forEach(function (b) { b.disabled = false; b.classList.remove('right', 'wrong'); });
+    paintGrid();
+    cs.t0 = performance.now();
+  }
+
+  function answer(k, btn) {
+    if (cs.locked) return;
+    cs.locked = true;
+    var c = cs.cur, right = answerOf(c), dt = performance.now() - cs.t0, fb = $('feedback');
+    var s = (dt / 1000).toFixed(1), ok = k === right;
+    cs.count++; cs.last = c;
+    keysOf(keysCards).forEach(function (b) { b.disabled = true; if (b.dataset.k === right) b.classList.add('right'); });
+    $('prompt').innerHTML = promptHTML(c, right);
+    if (ok) {
+      var nb = Math.min(boxes[c] + 1, 3);
+      if (nb === 3 && dt > 3000) nb = 2;
+      boxes[c] = nb; cs.streak++;
+      $('stage').className = 'stage ok';
+      fb.className = 'feedback good';
+      var auto = paintGrid();
+      if (auto === N) fb.innerHTML = '<b>Right, ' + s + ' s. All eighteen are automatic.</b> Take the table test.';
+      else if (dt > 3000) fb.innerHTML = '<b>Right, ' + s + ' s.</b> Under 3 seconds is what counts as automatic.';
+      else fb.innerHTML = '<b>Right, ' + s + ' s.</b>';
+      cs.timer = setTimeout(showCard, 750);
+    } else {
+      boxes[c] = 0; cs.streak = 0;
+      cs.queue.push({ c: c, due: cs.count + 2 });
+      btn.classList.add('wrong');
+      $('stage').className = 'stage no';
+      fb.className = 'feedback bad';
+      fb.innerHTML = '<b>Not ' + V[k].t + '.</b> ' + explain(c);
+      paintGrid();
+      $('next').hidden = false; $('next').focus();
+    }
+    save('tv.boxes', boxes);
+    recAnswer(c, ok, dt);
+  }
+
+  var resetArmed = null;
+  $('reset').addEventListener('click', function () {
+    var b = $('reset');
+    if (!resetArmed) {
+      b.textContent = 'Tap again to clear the grid';
+      resetArmed = setTimeout(function () { resetArmed = null; b.textContent = 'Reset this grid'; }, 4000);
+      return;
+    }
+    clearTimeout(resetArmed); resetArmed = null; b.textContent = 'Reset this grid';
+    for (var i = 0; i < N; i++) boxes[i] = 0;
+    cs.queue = []; cs.streak = 0; cs.last = -1;
+    save('tv.boxes', boxes);
+    $('feedback').className = 'feedback'; $('feedback').textContent = 'Grid cleared. The report keeps its history.';
+    showCard();
+  });
+  $('next').addEventListener('click', function () {
+    $('feedback').className = 'feedback'; $('feedback').textContent = '';
+    showCard();
+  });
+
+  /* ---------- Table test ---------- */
+  var ts = { cells: [], sel: 0, t0: null, ms: 0, tick: null, done: false, jump: false };
+  var keysTable = $('keys-table');
+  var T_HINT = 'Fill every box from memory. The clock starts on your first answer. Tap a box to change it.';
+
+  function buildBlank() {
+    var h = '<tr><th class="ang"></th>';
+    FN.forEach(function (f) { h += '<th scope="col">' + f + '</th>'; });
+    h += '</tr>';
+    ANG.forEach(function (ang, a) {
+      h += '<tr><th class="ang" scope="row">' + math(ang.m) + '<small>' + ang.deg + '°</small></th>';
+      for (var f = 0; f < 3; f++) h += '<td><button type="button" class="cell" data-i="' + (f * A + a) + '"></button></td>';
+      h += '</tr>';
+    });
+    $('blank').innerHTML = h;
+    Array.prototype.forEach.call($('blank').querySelectorAll('.cell'), function (b) {
+      b.addEventListener('click', function () { if (ts.done) return; ts.sel = +b.dataset.i; tPaint(); });
+    });
+  }
+  function empties() { var e = []; for (var i = 0; i < N; i++) if (ts.cells[i] == null) e.push(i); return e; }
+  function nextEmpty() {
+    var e = empties();
+    if (!e.length) return -1;
+    if (ts.jump) return e[Math.floor(Math.random() * e.length)];
+    for (var i = 0; i < e.length; i++) if (e[i] > ts.sel) return e[i];
+    return e[0];
+  }
+  function tPaint() {
+    Array.prototype.forEach.call($('blank').querySelectorAll('.cell'), function (b) {
+      var i = +b.dataset.i, k = ts.cells[i], label = cardName(i);
+      b.className = 'cell';
+      if (ts.done) {
+        var right = answerOf(i), ok = k === right;
+        b.classList.add(ok ? 'right' : 'wrong');
+        b.innerHTML = valHTML(right);
+        b.disabled = true;
+        b.setAttribute('aria-label', label + ': ' + (ok ? 'correct, ' : 'wrong, the answer is ') + V[right].t);
+      } else {
+        if (i === ts.sel) b.classList.add('sel');
+        b.innerHTML = k ? valHTML(k) : '';
+        b.disabled = false;
+        b.setAttribute('aria-label', label + ': ' + (k ? V[k].t : 'empty'));
+      }
+    });
+    keysOf(keysTable).forEach(function (b) { b.disabled = ts.done; });
+    $('check').disabled = ts.done || empties().length > 0;
+    $('best').textContent = best ? fmt(best) : 'none yet';
+  }
+  function tClock() { if (ts.t0 !== null && !ts.done) { ts.ms = performance.now() - ts.t0; $('clock').textContent = fmt(ts.ms); } }
+  function tReset() {
+    clearInterval(ts.tick);
+    ts.cells = []; for (var i = 0; i < N; i++) ts.cells.push(null);
+    ts.t0 = null; ts.ms = 0; ts.tick = null; ts.done = false;
+    ts.sel = ts.jump ? Math.floor(Math.random() * N) : 0;
+    $('clock').textContent = '0:00.0';
+    $('tresult').className = 'feedback';
+    $('tresult').textContent = T_HINT;
+    tPaint();
+  }
+  function tPick(k) {
+    if (ts.done) return;
+    if (ts.t0 === null) { ts.t0 = performance.now(); ts.tick = setInterval(tClock, 100); }
+    ts.cells[ts.sel] = k;
+    var n = nextEmpty();
+    if (n >= 0) ts.sel = n;
+    tPaint();
+    if (n < 0) $('check').focus();
+  }
+  function tCheck() {
+    if (ts.done || empties().length) return;
+    tClock(); clearInterval(ts.tick); ts.done = true;
+    var score = 0;
+    for (var i = 0; i < N; i++) if (ts.cells[i] === answerOf(i)) score++;
+    var r = $('tresult'), time = fmt(ts.ms), miss = N - score;
+    if (score === N) {
+      r.className = 'feedback good';
+      var goal = ts.ms < 45000 ? ' Goal met.' : ' The goal is under 0:45.';
+      if (best === null || ts.ms < best) {
+        best = Math.round(ts.ms); save('tv.best', best);
+        r.innerHTML = '<b>18 of 18 in ' + time + '. New best.</b>' + goal;
+      } else {
+        r.innerHTML = '<b>18 of 18 in ' + time + '.</b> Your best is ' + fmt(best) + '.' + goal;
+      }
+    } else {
+      r.className = 'feedback bad';
+      r.innerHTML = '<b>' + score + ' of 18 in ' + time + '.</b> The ' + (miss === 1 ? 'box marked ✕ now shows' : miss + ' boxes marked ✕ now show') + ' the right value. Start over and go again.';
+    }
+    recTable(score, ts.ms, ts.jump);
+    tPaint();
+    $('again').focus();
+  }
+  $('check').addEventListener('click', tCheck);
+  $('again').addEventListener('click', tReset);
+  $('jump').addEventListener('change', function () { ts.jump = $('jump').checked; tReset(); });
+
+  /* ---------- The pattern ---------- */
+  function buildPattern() {
+    function pat(n) { return math('<mfrac><msqrt><mn class="hl">' + n + '</mn></msqrt><mn>2</mn></mfrac>'); }
+    var h = '<thead><tr><th scope="col">Angle</th><th scope="col">sin, as a pattern</th><th scope="col">sin</th><th scope="col">cos, as a pattern</th><th scope="col">cos</th><th scope="col">tan = sin ÷ cos</th></tr></thead><tbody>';
+    ANG.forEach(function (ang, a) {
+      h += '<tr><th scope="row">' + math(ang.m) + '</th>';
+      h += '<td class="pat">' + (a < 5 ? pat(a) : '') + '</td><td>' + valHTML(ANS.sin[a]) + '</td>';
+      h += '<td class="pat">' + (a < 5 ? pat(4 - a) : '') + '</td><td>' + valHTML(ANS.cos[a]) + '</td>';
+      h += '<td>' + valHTML(ANS.tan[a]) + '</td></tr>';
+    });
+    $('ptable').innerHTML = h + '</tbody>';
+  }
+
+  /* ---------- Report ---------- */
+  function allDocs() {
+    var m = {}, k;
+    for (k in remote) if (Object.prototype.hasOwnProperty.call(remote, k)) m[k] = remote[k];
+    for (k in days) if (Object.prototype.hasOwnProperty.call(days, k)) m[k + '_' + DEV] = days[k];
+    return Object.keys(m).map(function (id) { return m[id]; });
+  }
+  function tile(n, label) { return '<div class="stat"><span class="n">' + n + '</span><span class="l">' + label + '</span></div>'; }
+  function minutes(ms) { var m = Math.round(ms / 60000); return (ms > 0 && m < 1) ? '&lt;1' : String(m); }
+  function renderReport() {
+    var r = summarize(allDocs(), todayStr()), h = '';
+    h += '<section><h2>Last 7 days</h2><div class="tiles">' +
+      tile(r.days7 + '<small> of 7</small>', 'Days practiced') +
+      tile(minutes(r.ms7) + '<small> min</small>', 'Practice time') +
+      tile(r.auto + '<small>/' + N + '</small>', 'Automatic now') +
+      tile(r.best ? fmt(r.best) : '–', 'Best perfect table') + '</div></section>';
+    if (r.empty) {
+      h += '<section><p class="empty">No practice recorded yet. Answers on the Cards and Table test tabs will show up here.</p></section>';
+    } else {
+      var words = { bad: 'Fix', warn: 'Watch', ok: 'Good' };
+      h += '<section><h2>What to work on</h2><ul class="flags">';
+      r.flags.forEach(function (f) { h += '<li><span class="pill ' + f.lv + '">' + words[f.lv] + '</span><span>' + f.text + '</span></li>'; });
+      h += '</ul></section>';
+
+      h += '<section><h2>Each value, last 7 days</h2><p class="note">Right answers out of tries, and the average time on right answers.</p><table class="vtable"><thead><tr><th class="ang"></th>';
+      FN.forEach(function (f) { h += '<th scope="col">' + f + '</th>'; });
+      h += '</tr></thead><tbody>';
+      var label = { miss: 'misses', slow: 'slow', ok: 'solid', none: '' };
+      ANG.forEach(function (ang, a) {
+        h += '<tr><th class="ang" scope="row">' + ang.t + '</th>';
+        for (var f = 0; f < 3; f++) {
+          var p = r.per[f * A + a];
+          if (!p.n7) { h += '<td class="none">no tries</td>'; continue; }
+          h += '<td class="' + p.st + '">' + p.ok7 + '/' + p.n7 + (p.ok7 ? ' · ' + secs(p.avg) : '') + '<small>' + label[p.st] + '</small></td>';
+        }
+        h += '</tr>';
+      });
+      h += '</tbody></table></section>';
+
+      h += '<section><h2>Day by day</h2><div class="scroll"><table class="log"><thead><tr><th scope="col">Day</th><th scope="col">Minutes</th><th scope="col">Cards</th><th scope="col">Right</th><th scope="col">Avg time</th><th scope="col">Table tests</th></tr></thead><tbody>';
+      r.log.forEach(function (d) {
+        var tb = '–';
+        if (d.tables.length) {
+          var top = d.tables.slice().sort(function (x, y) { return y.s - x.s || x.ms - y.ms; })[0];
+          tb = d.tables.length + ', best ' + top.s + '/' + N + ' in ' + fmt(top.ms);
+        }
+        h += '<tr><td>' + fmtDate(d.date) + '</td><td>' + minutes(d.activeMs) + '</td><td>' + d.answered + '</td><td>' +
+          (d.answered ? pct(Math.min(d.correct, d.answered) / d.answered) : '–') + '</td><td>' +
+          (d.correct ? secs(d.msCorrect / d.correct) : '–') + '</td><td>' + tb + '</td></tr>';
+      });
+      h += '</tbody></table></div></section>';
+    }
+    $('report-body').innerHTML = h;
+    paintSource();
+  }
+  $('norec').checked = norec;
+  $('norec').addEventListener('change', function () { norec = $('norec').checked; save('tv.norec', norec); });
+
+  /* ---------- Tabs ---------- */
+  var VIEWS = ['cards', 'table', 'pattern', 'report'], view = 'cards';
+  function show(v, push) {
+    if (VIEWS.indexOf(v) < 0) v = 'cards';
+    view = v;
+    VIEWS.forEach(function (n) {
+      $('view-' + n).hidden = n !== v;
+      $('tab-' + n).setAttribute('aria-selected', n === v ? 'true' : 'false');
+    });
+    if (v === 'report') { flush(); renderReport(); }
+    if (push) { try { history.replaceState(null, '', '#' + v); } catch (e) { try { location.hash = v; } catch (e2) {} } }
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) {
+    t.addEventListener('click', function () { show(t.dataset.view, true); });
+  });
+  window.addEventListener('hashchange', function () { show(location.hash.replace('#', ''), false); });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flush(); });
+  window.addEventListener('pagehide', flush);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey || !e.key) return;
+    var tag = e.target && e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    var n = '123456789'.indexOf(e.key);
+    if (n < 0) return;
+    var box = view === 'cards' ? keysCards : view === 'table' ? keysTable : null;
+    if (!box) return;
+    var b = keysOf(box)[n];
+    if (b && !b.disabled) { e.preventDefault(); b.click(); }
+  });
+
+  /* ---------- Boot ---------- */
+  buildKeys(keysCards, answer);
+  buildKeys(keysTable, function (k) { tPick(k); });
+  buildGrid();
+  buildBlank();
+  buildPattern();
+  tReset();
+  showCard();
+  paintSource();
+  show(location.hash.replace('#', ''), false);
+  initShared();
+})();
+</script>

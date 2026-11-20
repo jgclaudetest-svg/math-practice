@@ -1,0 +1,602 @@
+<title>Friday Check</title>
+<style>
+  /* Page layout: the card to read aloud sits on the graph-paper stage; the answer drops in under a dashed rule;
+     two wide mark buttons sit where a thumb lands. Week notes are four plain panels. */
+  .say { font-family: var(--font-display); font-weight: 500; font-size: clamp(1.15rem, 4.6vw, 1.5rem); line-height: 1.25; text-align: center; text-wrap: balance; max-width: 28ch; }
+  .sym { font-size: clamp(1.3rem, 5.6vw, 1.9rem); line-height: 1.2; max-width: 100%; overflow-x: auto; text-align: center; padding: 2px 0; }
+  .ans { width: 100%; border-top: 1.5px dashed var(--line); padding-top: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+  .ans .sym { font-size: clamp(1.15rem, 5vw, 1.7rem); }
+  .lbl { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .saytxt { color: var(--muted); font-size: .95rem; text-align: center; max-width: 42ch; }
+  .alt { font-size: 1rem; color: var(--muted); max-width: 100%; overflow-x: auto; }
+  .stage.quiz { min-height: 250px; justify-content: flex-start; padding-top: 18px; gap: 12px; }
+  .marks { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+  .mark { min-height: 64px; border-radius: 10px; border: 1.5px solid var(--line); font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; }
+  .mark.got { background: var(--good-bg); border-color: var(--good); color: var(--good); }
+  .mark.miss { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+  .mark:active { transform: scale(.98); }
+  #reveal { min-height: 64px; }
+  .end { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .end h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.9rem; line-height: 1.1; margin: 0; font-variant-numeric: tabular-nums; }
+  .end p { margin: 0; max-width: 60ch; }
+  .missed { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .missed li { background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .missed .q { font-weight: 600; }
+  .missed .a { font-size: 1.15rem; max-width: 100%; overflow-x: auto; padding: 2px 0; }
+  .missed .s { color: var(--muted); font-size: .9rem; }
+
+  .weeks { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 16px; }
+  .wk { display: flex; flex-direction: column; gap: 10px; }
+  .wk-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+  .wk h3 { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; margin: 0; }
+  .wk .dates { color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+  .wk p { margin: 0; font-size: .92rem; }
+  .wk .goal { color: var(--muted); }
+  .wk .goal b { color: var(--ink); font-weight: 600; }
+  .field { display: flex; flex-direction: column; gap: 4px; font-size: .82rem; color: var(--muted); }
+  .field input, .field select {
+    font: inherit; font-size: 1rem; color: var(--ink); background: var(--bg); border: 1.5px solid var(--line);
+    border-radius: 8px; min-height: 44px; padding: 8px 10px; width: 100%; min-width: 0;
+  }
+  .wk .status { font-size: .82rem; color: var(--muted); min-height: 1.3em; }
+  .wk .status.bad { color: var(--bad); }
+  .wk .status.good { color: var(--good); }
+  .tips { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 12px; max-width: 65ch; }
+  .tips b { font-weight: 600; }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <h1>Friday Check</h1>
+    <p>For the parent. Read a card aloud, check the answer your student gives, and keep the weekly results in one place.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" id="tab-quiz" data-view="quiz" aria-selected="true">Quiz</button>
+    <button class="tab" role="tab" id="tab-checks" data-view="checks" aria-selected="false">Friday checks</button>
+    <button class="tab" role="tab" id="tab-how" data-view="how" aria-selected="false">How to quiz</button>
+    <button class="tab" role="tab" id="tab-report" data-view="report" aria-selected="false">Report</button>
+  </nav>
+
+  <!-- Quiz -->
+  <section id="view-quiz" role="tabpanel" aria-labelledby="tab-quiz">
+    <div class="work">
+      <div class="main">
+        <div class="seg" id="sets" role="group" aria-label="Card set">
+          <button type="button" id="set-mix" data-set="mix" aria-pressed="true">This week's mix</button>
+          <button type="button" id="set-values" data-set="values" aria-pressed="false">Values</button>
+          <button type="button" id="set-formulas" data-set="formulas" aria-pressed="false">Formulas</button>
+          <button type="button" id="set-graphs" data-set="graphs" aria-pressed="false">Graphs</button>
+        </div>
+        <p class="note" id="set-note"></p>
+
+        <div id="round-live" class="main">
+          <div class="stage quiz" id="stage">
+            <span class="tag" id="card-tag"></span>
+            <div class="say" id="card-say"></div>
+            <div class="sym" id="card-sym"></div>
+            <div class="ans" id="card-ans" hidden>
+              <span class="lbl">Answer</span>
+              <div class="sym" id="ans-sym"></div>
+              <div class="alt" id="ans-alt" hidden></div>
+              <div class="saytxt" id="ans-say"></div>
+            </div>
+          </div>
+          <button type="button" class="primary" id="reveal">Show answer</button>
+          <div class="marks" id="marks" hidden>
+            <button type="button" class="mark got" id="got">Got it</button>
+            <button type="button" class="mark miss" id="miss">Missed</button>
+          </div>
+        </div>
+
+        <div id="round-end" class="end" hidden>
+          <h2 id="end-score"></h2>
+          <p id="end-line"></p>
+          <ul class="missed" id="end-missed"></ul>
+          <button type="button" class="primary" id="deal">Deal 10 more</button>
+        </div>
+      </div>
+
+      <aside class="side" aria-label="Round progress">
+        <div class="stats">
+          <div class="stat"><span class="n"><span id="r-pos">1</span><small>/10</small></span><span class="l">Card</span></div>
+          <div class="stat"><span class="n"><span id="r-right">0</span><small>/<span id="r-asked">0</span></small></span><span class="l">Right so far</span></div>
+          <div class="stat"><span class="n"><span id="r-solid">0</span><small>/<span id="r-total">0</span></small></span><span class="l">Solid cards</span></div>
+        </div>
+        <p class="note">Read the question aloud. Wait for an answer before you tap Show answer. Keep the screen facing you.</p>
+        <p class="note">A card turns solid after three Got its in a row. A miss sends it back to the start and it comes up again sooner.</p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Friday checks -->
+  <section id="view-checks" role="tabpanel" aria-labelledby="tab-checks" hidden>
+    <div class="main">
+      <p class="note" id="checks-note">Checking the shared record.</p>
+      <div class="weeks" id="weeks"></div>
+    </div>
+  </section>
+
+  <!-- How to quiz -->
+  <section id="view-how" role="tabpanel" aria-labelledby="tab-how" hidden>
+    <div class="prose">
+      <section>
+        <h2>Six rules for a good quiz</h2>
+        <ol class="tips">
+          <li><b>Quiz twice a week, five minutes each.</b> One round of 10 cards is about five minutes. Short and regular beats one long session.</li>
+          <li><b>You do not need to know the math.</b> Each card tells you what to say and shows the answer in symbols and in words. Match what you hear to what you see.</li>
+          <li><b>No partial credit for almost.</b> A wrong sign, a missing square root, or a long pause to work it out all count as Missed. The goal is instant recall.</li>
+          <li><b>After a miss, say the answer aloud and move on.</b> Do not stop to teach it. The card will come back on its own in a later round.</li>
+          <li><b>Run the Friday check on paper.</b> Blank page, timer, no notes. Write the result on the Friday checks tab so it sits next to the other weeks.</li>
+          <li><b>Bring the miss list to tutoring.</b> The Report tab shows the cards missed most. That list tells the tutor where to spend the session.</li>
+        </ol>
+      </section>
+      <section>
+        <h2>How to read the symbols aloud</h2>
+        <p>π is "pi". θ is "theta". A small 2 above a function, as in sin², is "sine squared". The ± sign is "plus or minus". Each card writes the words out for you, so you only need this if your student asks.</p>
+      </section>
+    </div>
+  </section>
+
+  <section id="view-report" role="tabpanel" aria-labelledby="tab-report" hidden></section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /*PURE-START*/
+  var PI = Math.PI, R2 = Math.SQRT2, R3 = Math.sqrt(3);
+  function mn(s) { return '<mn>' + s + '</mn>'; }
+  function mi(s) { return '<mi>' + s + '</mi>'; }
+  function mo(s) { return '<mo>' + s + '</mo>'; }
+  function mt(s) { return '<mtext>' + s + '</mtext>'; }
+  function fr(a, b) { return '<mfrac><mrow>' + a + '</mrow><mrow>' + b + '</mrow></mfrac>'; }
+  function rt(a) { return '<msqrt>' + a + '</msqrt>'; }
+  var SP = '<mspace width="0.25em"></mspace>';
+  function fn(name, arg) { return mi(name) + SP + arg; }
+  function fsq(name, arg) { return '<msup>' + mi(name) + mn('2') + '</msup>' + SP + arg; }
+  function par(a) { return mo('(') + a + mo(')'); }
+  var TH = mi('θ'), X = mi('x'), Y = mi('y'), AA = mi('A');
+
+  var FNS = [
+    { id: 'sin', say: 'sine', f: Math.sin },
+    { id: 'cos', say: 'cosine', f: Math.cos },
+    { id: 'tan', say: 'tangent', f: Math.tan }
+  ];
+  var ANGLES = [
+    { t: '0',   say: 'zero',      m: mn('0'),               rad: 0,      deg: 0 },
+    { t: 'π/6', say: 'pi over 6', m: fr(mi('π'), mn('6')),  rad: PI / 6, deg: 30 },
+    { t: 'π/4', say: 'pi over 4', m: fr(mi('π'), mn('4')),  rad: PI / 4, deg: 45 },
+    { t: 'π/3', say: 'pi over 3', m: fr(mi('π'), mn('3')),  rad: PI / 3, deg: 60 },
+    { t: 'π/2', say: 'pi over 2', m: fr(mi('π'), mn('2')),  rad: PI / 2, deg: 90 },
+    { t: 'π',   say: 'pi',        m: mi('π'),               rad: PI,     deg: 180 }
+  ];
+  var VALS = {
+    m1:  { m: mo('−') + mn('1'),             say: 'Negative one.',                      num: -1 },
+    z:   { m: mn('0'),                       say: 'Zero.',                              num: 0 },
+    h:   { m: fr(mn('1'), mn('2')),          say: 'One half.',                          num: 0.5 },
+    r22: { m: fr(rt(mn('2')), mn('2')),      say: 'The square root of 2, over 2.',      num: R2 / 2 },
+    r32: { m: fr(rt(mn('3')), mn('2')),      say: 'The square root of 3, over 2.',      num: R3 / 2 },
+    o:   { m: mn('1'),                       say: 'One.',                               num: 1 },
+    r33: { m: fr(rt(mn('3')), mn('3')),      say: 'The square root of 3, over 3.',      num: R3 / 3 },
+    r3:  { m: rt(mn('3')),                   say: 'The square root of 3.',              num: R3 },
+    u:   { m: mt('undefined'),               say: 'Undefined. It has no value there.',  num: null }
+  };
+  var ANS = {
+    sin: ['z', 'h', 'r22', 'r32', 'o', 'z'],
+    cos: ['o', 'r32', 'r22', 'h', 'z', 'm1'],
+    tan: ['z', 'r33', 'o', 'r3', 'u', 'z']
+  };
+
+  var CARDS = [];
+
+  /* 18 exact values */
+  FNS.forEach(function (F) {
+    ANGLES.forEach(function (A, a) {
+      var v = VALS[ANS[F.id][a]];
+      CARDS.push({
+        key: 'v_' + F.id + '_' + a, group: 'Values', sub: 'values', name: F.id + ' ' + A.t, tag: A.deg + '°',
+        ask: 'What is ' + F.say + ' of ' + A.say + '?',
+        askM: fn(F.id, A.m) + mo('=') + mo('?'), ansM: v.m, ansSay: v.say,
+        check: { type: 'value', f: F.f, x: A.rad, num: v.num }
+      });
+    });
+  });
+
+  /* 16 identities, up to but not including double angle */
+  function formula(key, sub, name, ask, lhsM, rhsM, ansSay, check, altM) {
+    CARDS.push({ key: key, group: 'Formulas', sub: sub, name: name, tag: 'Formula', ask: ask,
+      askM: lhsM + mo('=') + mo('?'), ansM: rhsM, altM: altM || null, ansSay: ansSay, check: check });
+  }
+  formula('f_csc', 'basic', 'csc θ', 'What is cosecant of theta, written with sine?',
+    fn('csc', TH), fr(mn('1'), fn('sin', TH)), 'One over sine theta. Some books write cosecant as cosec.',
+    { type: 'tri', lhs: function (a, b, h) { return h / b; }, rhs: function (x) { return 1 / Math.sin(x); } });
+  formula('f_sec', 'basic', 'sec θ', 'What is secant of theta, written with cosine?',
+    fn('sec', TH), fr(mn('1'), fn('cos', TH)), 'One over cosine theta.',
+    { type: 'tri', lhs: function (a, b, h) { return h / a; }, rhs: function (x) { return 1 / Math.cos(x); } });
+  formula('f_cot', 'basic', 'cot θ', 'What is cotangent of theta, written with tangent?',
+    fn('cot', TH), fr(mn('1'), fn('tan', TH)), 'One over tangent theta.',
+    { type: 'tri', lhs: function (a, b) { return a / b; }, rhs: function (x) { return 1 / Math.tan(x); } });
+  formula('f_tan', 'basic', 'tan θ', 'What is tangent of theta, written with sine and cosine?',
+    fn('tan', TH), fr(fn('sin', TH), fn('cos', TH)), 'Sine theta over cosine theta.',
+    { type: 'tri', lhs: function (a, b) { return b / a; }, rhs: function (x) { return Math.sin(x) / Math.cos(x); } });
+
+  formula('f_py1', 'basic', 'sin²θ + cos²θ', 'Finish this: sine squared theta, plus cosine squared theta, equals what?',
+    fsq('sin', TH) + mo('+') + fsq('cos', TH), mn('1'), 'One.',
+    { type: 'identity', lhs: function (x) { return Math.pow(Math.sin(x), 2) + Math.pow(Math.cos(x), 2); }, rhs: function () { return 1; } });
+  formula('f_py2', 'basic', '1 + tan²θ', 'Finish this: one plus tangent squared theta equals what?',
+    mn('1') + mo('+') + fsq('tan', TH), fsq('sec', TH), 'Secant squared theta.',
+    { type: 'identity', lhs: function (x) { return 1 + Math.pow(Math.tan(x), 2); }, rhs: function (x) { return 1 / Math.pow(Math.cos(x), 2); } });
+  formula('f_py3', 'basic', '1 + cot²θ', 'Finish this: one plus cotangent squared theta equals what?',
+    mn('1') + mo('+') + fsq('cot', TH), fsq('csc', TH), 'Cosecant squared theta.',
+    { type: 'identity', lhs: function (x) { return 1 + Math.pow(Math.cos(x) / Math.sin(x), 2); }, rhs: function (x) { return 1 / Math.pow(Math.sin(x), 2); } });
+
+  var SC = fn('sin', X) + SP + fn('cos', Y), CS = fn('cos', X) + SP + fn('sin', Y);
+  var CC = fn('cos', X) + SP + fn('cos', Y), SS = fn('sin', X) + SP + fn('sin', Y);
+  var TT = fn('tan', X) + SP + fn('tan', Y);
+  formula('f_sin_sum', 'sumdiff', 'sin(x + y)', 'What is the formula for sine of x plus y?',
+    mi('sin') + par(X + mo('+') + Y), SC + mo('+') + CS, 'Sine x cosine y, plus cosine x sine y.',
+    { type: 'identity', lhs: function (x, y) { return Math.sin(x + y); }, rhs: function (x, y) { return Math.sin(x) * Math.cos(y) + Math.cos(x) * Math.sin(y); } });
+  formula('f_sin_dif', 'sumdiff', 'sin(x − y)', 'What is the formula for sine of x minus y?',
+    mi('sin') + par(X + mo('−') + Y), SC + mo('−') + CS, 'Sine x cosine y, minus cosine x sine y.',
+    { type: 'identity', lhs: function (x, y) { return Math.sin(x - y); }, rhs: function (x, y) { return Math.sin(x) * Math.cos(y) - Math.cos(x) * Math.sin(y); } });
+  formula('f_cos_sum', 'sumdiff', 'cos(x + y)', 'What is the formula for cosine of x plus y?',
+    mi('cos') + par(X + mo('+') + Y), CC + mo('−') + SS, 'Cosine x cosine y, minus sine x sine y. The sign flips for cosine.',
+    { type: 'identity', lhs: function (x, y) { return Math.cos(x + y); }, rhs: function (x, y) { return Math.cos(x) * Math.cos(y) - Math.sin(x) * Math.sin(y); } });
+  formula('f_cos_dif', 'sumdiff', 'cos(x − y)', 'What is the formula for cosine of x minus y?',
+    mi('cos') + par(X + mo('−') + Y), CC + mo('+') + SS, 'Cosine x cosine y, plus sine x sine y. The sign flips for cosine.',
+    { type: 'identity', lhs: function (x, y) { return Math.cos(x - y); }, rhs: function (x, y) { return Math.cos(x) * Math.cos(y) + Math.sin(x) * Math.sin(y); } });
+  formula('f_tan_sum', 'sumdiff', 'tan(x + y)', 'What is the formula for tangent of x plus y?',
+    mi('tan') + par(X + mo('+') + Y), fr(fn('tan', X) + mo('+') + fn('tan', Y), mn('1') + mo('−') + TT),
+    'Tangent x plus tangent y, all over one minus tangent x tangent y.',
+    { type: 'identity', lhs: function (x, y) { return Math.tan(x + y); }, rhs: function (x, y) { return (Math.tan(x) + Math.tan(y)) / (1 - Math.tan(x) * Math.tan(y)); } });
+  formula('f_tan_dif', 'sumdiff', 'tan(x − y)', 'What is the formula for tangent of x minus y?',
+    mi('tan') + par(X + mo('−') + Y), fr(fn('tan', X) + mo('−') + fn('tan', Y), mn('1') + mo('+') + TT),
+    'Tangent x minus tangent y, all over one plus tangent x tangent y.',
+    { type: 'identity', lhs: function (x, y) { return Math.tan(x - y); }, rhs: function (x, y) { return (Math.tan(x) - Math.tan(y)) / (1 + Math.tan(x) * Math.tan(y)); } });
+
+  var HALF = fr(AA, mn('2')), CA = fn('cos', AA);
+  formula('f_half_sin', 'half', 'sin(A/2)', 'What is the half-angle formula for sine of A over 2?',
+    fn('sin', HALF), mo('±') + rt(fr(mn('1') + mo('−') + CA, mn('2'))),
+    'Plus or minus the square root of: one minus cosine A, all over 2. The quadrant of A over 2 decides the sign.',
+    { type: 'half', lhs: function (A) { return Math.sin(A / 2); }, rhs: function (A) { return Math.sqrt((1 - Math.cos(A)) / 2); } });
+  formula('f_half_cos', 'half', 'cos(A/2)', 'What is the half-angle formula for cosine of A over 2?',
+    fn('cos', HALF), mo('±') + rt(fr(mn('1') + mo('+') + CA, mn('2'))),
+    'Plus or minus the square root of: one plus cosine A, all over 2. The quadrant of A over 2 decides the sign.',
+    { type: 'half', lhs: function (A) { return Math.cos(A / 2); }, rhs: function (A) { return Math.sqrt((1 + Math.cos(A)) / 2); } });
+  formula('f_half_tan', 'half', 'tan(A/2)', 'What is the half-angle formula for tangent of A over 2?',
+    fn('tan', HALF), mo('±') + rt(fr(mn('1') + mo('−') + CA, mn('1') + mo('+') + CA)),
+    'Plus or minus the square root of: one minus cosine A, over one plus cosine A. Also accept sine A over one plus cosine A, or one minus cosine A over sine A.',
+    { type: 'half', lhs: function (A) { return Math.tan(A / 2); }, rhs: function (A) { return Math.sqrt((1 - Math.cos(A)) / (1 + Math.cos(A))); },
+      alts: [function (A) { return Math.sin(A) / (1 + Math.cos(A)); }, function (A) { return (1 - Math.cos(A)) / Math.sin(A); }] },
+    mt('also ') + fr(fn('sin', AA), mn('1') + mo('+') + CA) + mt(' or ') + fr(mn('1') + mo('−') + CA, fn('sin', AA)));
+
+  /* 24 graph facts: six functions, four facts each */
+  var GF = [
+    { id: 'sin', say: 'sine',      f: Math.sin,                                        den: null,     period: 2 * PI, range: 'band',    undef: null,   at0: 0 },
+    { id: 'cos', say: 'cosine',    f: Math.cos,                                        den: null,     period: 2 * PI, range: 'band',    undef: null,   at0: 1 },
+    { id: 'tan', say: 'tangent',   f: function (x) { return Math.sin(x) / Math.cos(x); }, den: Math.cos, period: PI,     range: 'all',     undef: PI / 2, at0: 0 },
+    { id: 'cot', say: 'cotangent', f: function (x) { return Math.cos(x) / Math.sin(x); }, den: Math.sin, period: PI,     range: 'all',     undef: 0,      at0: null },
+    { id: 'sec', say: 'secant',    f: function (x) { return 1 / Math.cos(x); },           den: Math.cos, period: 2 * PI, range: 'outside', undef: PI / 2, at0: 1 },
+    { id: 'csc', say: 'cosecant',  f: function (x) { return 1 / Math.sin(x); },           den: Math.sin, period: 2 * PI, range: 'outside', undef: 0,      at0: null }
+  ];
+  var RANGE = {
+    band:    { m: mo('−') + mn('1') + mo('≤') + mi('y') + mo('≤') + mn('1'), say: 'From negative one up to one. Never past either.' },
+    all:     { m: mt('all real numbers'), say: 'All real numbers. The graph runs up and down forever.' },
+    outside: { m: mi('y') + mo('≤') + mo('−') + mn('1') + mt(' or ') + mi('y') + mo('≥') + mn('1'), say: 'Negative one or lower, or one or higher. Never between negative one and one.' }
+  };
+  GF.forEach(function (G) {
+    var gm = mi('y') + mo('=') + fn(G.id, mi('x'));
+    function graph(kind, tag, ask, ansM, ansSay) {
+      CARDS.push({ key: 'g_' + G.id + '_' + kind, group: 'Graphs', sub: 'graphs', name: G.id + ': ' + tag.toLowerCase(), tag: tag,
+        ask: ask, askM: gm, ansM: ansM, ansSay: ansSay, check: { type: 'graph', kind: kind, g: G } });
+    }
+    graph('per', 'Period', 'What is the period of the ' + G.say + ' graph? The period is how far it runs before it repeats.',
+      G.period > 4 ? mn('2') + mi('π') : mi('π'), G.period > 4 ? 'Two pi.' : 'Pi.');
+    graph('rng', 'Range', 'What is the range of ' + G.say + '? The range is the set of heights the graph reaches.',
+      RANGE[G.range].m, RANGE[G.range].say);
+    graph('und', 'Undefined at', 'Where is ' + G.say + ' undefined? Those are the gaps in the graph.',
+      G.undef === null ? mt('nowhere') : (G.undef > 1 ? mi('x') + mo('=') + fr(mi('π'), mn('2')) + mo('+') + mi('n') + mi('π') : mi('x') + mo('=') + mi('n') + mi('π')),
+      G.undef === null ? 'Nowhere. It has a value at every angle.' :
+        (G.undef > 1 ? 'Pi over 2, and every pi after that, in both directions. That is where cosine is zero.' : 'Zero, pi, two pi and every other multiple of pi. That is where sine is zero.'));
+    graph('at0', 'Value at 0', 'What is ' + G.say + ' of zero? That is where the graph meets the y axis.',
+      G.at0 === null ? mt('undefined') : mn(String(G.at0)),
+      G.at0 === null ? 'Undefined. The graph never touches the y axis.' : (G.at0 === 0 ? 'Zero.' : 'One.'));
+  });
+
+  /* The four plan weeks. Dates are the plan's own. */
+  function planWeek(today) {
+    if (today < '2026-11-30') return 1;
+    if (today < '2026-12-07') return 2;
+    if (today < '2026-12-14') return 3;
+    return 4;
+  }
+  function weekTag(n, today) {
+    if (today > '2026-12-18') return '';
+    if (planWeek(today) !== n) return '';
+    return today < '2026-11-23' ? 'Up next' : 'This week';
+  }
+  /* What "This week's mix" deals: [pool, how many]. Pools: values, graphs, basic, sumdiff, half. */
+  var MIX = {
+    1: { deal: [['values', 10]], note: 'Week 1 mix: the 18 exact values.' },
+    2: { deal: [['values', 10]], note: 'Week 2 mix: the exact values again. Fractions and algebra are checked on paper this week.' },
+    3: { deal: [['values', 3], ['graphs', 4], ['basic', 3]], note: 'Week 3 mix: graphs, the basic identities, and a few values.' },
+    4: { deal: [['values', 2], ['graphs', 2], ['sumdiff', 4], ['half', 2]], note: 'Week 4 mix: sum, difference and half-angle formulas, with a few values and graphs.' }
+  };
+  function inPool(card, pool) {
+    if (pool === 'formulas') return card.group === 'Formulas';
+    return card.sub === pool;
+  }
+  /* A week note as saved or read back. Anything malformed becomes blank. */
+  function cleanCheck(b) {
+    var o = { days: null, result: '', miss: '', updated: '' };
+    if (!b || typeof b !== 'object') return o;
+    if (typeof b.days === 'number' && b.days >= 0 && b.days <= 5 && Math.floor(b.days) === b.days) o.days = b.days;
+    if (typeof b.result === 'string') o.result = b.result.slice(0, 200);
+    if (typeof b.miss === 'string') o.miss = b.miss.slice(0, 200);
+    if (typeof b.updated === 'string' && b.updated.length <= 40) o.updated = b.updated;
+    return o;
+  }
+  var WEEKS = [
+    { id: 'week1', title: 'Week 1', dates: 'Nov 23 to 27', check: 'Blank values table from memory.',
+      how: 'Hand over a blank page. Your student writes sin, cos and tan for all six angles. Time it.', goal: 'No mistakes, in under 2:00 on paper.' },
+    { id: 'week2', title: 'Week 2', dates: 'Nov 30 to Dec 4', check: '15 mixed fraction and algebra problems.',
+      how: 'Use a set from the tutor or the review section of the textbook. Count the right answers.', goal: '12 or more right.' },
+    { id: 'week3', title: 'Week 3', dates: 'Dec 7 to 11', check: 'Sketch sin, cos and tan from memory.',
+      how: 'Blank page. Each sketch should show the key points: where it crosses zero, its high and low points, and the gaps for tangent.', goal: 'All three shapes right, with key points labeled.' },
+    { id: 'week4', title: 'Week 4', dates: 'Dec 14 to 18', check: 'One-page final check from memory.',
+      how: 'Blank page, no notes. It covers the values table, the unit circle, three graph sketches, the formulas, and a few mixed problems.', goal: 'Everything from memory.' }
+  ];
+  /*PURE-END*/
+
+  var $ = Kit.$, N = CARDS.length, ROUND = 10;
+  var TODAY = Kit.today(), WEEK = planWeek(TODAY);
+
+  Kit.init({
+    prefix: 'fc',
+    items: CARDS.map(function (c) { return { key: c.key, name: c.name, group: c.group }; }),
+    slowMs: null, idleCapMs: 60000, planDays: 2, planMinutes: 5,
+    test: { name: 'quiz round', total: ROUND, passScore: 8 },
+    mastery: function () { return { done: deck ? deck.auto() : 0, total: N }; },
+    masteryLabel: 'Solid cards',
+    norecLabel: "Don't record on this device (for trying the page out)"
+  });
+  var deck = Kit.deck({ id: 'cards', n: N, fastMs: null });
+
+  /* ---------- Quiz ---------- */
+  var setId = Kit.load('set', 'mix');
+  if (['mix', 'values', 'formulas', 'graphs'].indexOf(setId) < 0) setId = 'mix';
+  var round = null;   /* { cards, pos, results, t0, start, shown, shownAt } */
+
+  function dealRound() {
+    var quotas = setId === 'mix' ? MIX[WEEK].deal : [[setId, ROUND]], dealt = {}, list = [];
+    quotas.forEach(function (q) {
+      var ok = function (i) { return !dealt[i] && inPool(CARDS[i], q[0]); };
+      for (var k = 0; k < q[1]; k++) {
+        var left = 0;
+        for (var i = 0; i < N; i++) if (ok(i)) left++;
+        if (!left) break;
+        var c = deck.next(ok);
+        if (!ok(c)) break;
+        dealt[c] = 1; list.push(c);
+      }
+    });
+    round = { cards: Kit.shuffle(list), pos: 0, results: [], start: performance.now(), t0: 0, shown: false, shownAt: 0 };
+    $('round-end').hidden = true;
+    $('round-live').hidden = false;
+    showCard();
+  }
+
+  function paintSide() {
+    var right = 0;
+    round.results.forEach(function (r) { if (r) right++; });
+    $('r-pos').textContent = Math.min(round.pos + 1, round.cards.length);
+    $('r-right').textContent = right;
+    $('r-asked').textContent = round.results.length;
+    $('r-solid').textContent = deck.auto();
+    $('r-total').textContent = N;
+  }
+
+  function showCard() {
+    var c = CARDS[round.cards[round.pos]];
+    round.shown = false; round.t0 = performance.now();
+    $('stage').className = 'stage quiz';
+    $('card-tag').textContent = 'Card ' + (round.pos + 1) + ' of ' + round.cards.length + ' · ' + c.tag;
+    $('card-say').textContent = c.ask;
+    $('card-sym').innerHTML = Kit.math(c.askM);
+    $('card-ans').hidden = true;
+    $('reveal').hidden = false;
+    $('marks').hidden = true;
+    paintSide();
+  }
+
+  function reveal() {
+    if (!round || round.shown) return;
+    var c = CARDS[round.cards[round.pos]];
+    round.shown = true; round.shownAt = performance.now();
+    $('ans-sym').innerHTML = Kit.math(c.ansM);
+    $('ans-alt').hidden = !c.altM;
+    $('ans-alt').innerHTML = c.altM ? Kit.math(c.altM, true) : '';
+    $('ans-say').textContent = 'Say: ' + c.ansSay;
+    $('card-ans').hidden = false;
+    $('reveal').hidden = true;
+    $('marks').hidden = false;
+  }
+
+  function mark(ok) {
+    /* The mark buttons appear where Show answer was, so ignore a tap that lands right after the reveal. */
+    if (!round || !round.shown || performance.now() - round.shownAt < 350) return;
+    var idx = round.cards[round.pos], c = CARDS[idx], dt = performance.now() - round.t0;
+    round.shown = false;
+    deck.mark(idx, ok, dt);
+    Kit.recAnswer(c.key, ok, dt);
+    round.results.push(ok);
+    round.pos++;
+    if (round.pos >= round.cards.length) endRound(); else showCard();
+  }
+
+  function endRound() {
+    var total = round.cards.length, score = 0, missed = [];
+    round.results.forEach(function (r, i) { if (r) score++; else missed.push(CARDS[round.cards[i]]); });
+    Kit.recTest(score, total, performance.now() - round.start, false);
+    paintSide();
+    $('round-live').hidden = true;
+    $('round-end').hidden = false;
+    $('end-score').textContent = score + ' of ' + total;
+    $('end-line').textContent = missed.length === 0 ? 'A clean round. Nothing to review.' :
+      (missed.length === 1 ? 'One miss. Say the answer aloud together once. It will come back in a later round.' :
+        missed.length + ' misses. Say each answer aloud together once. They will come back in later rounds.');
+    var h = '';
+    missed.forEach(function (c) {
+      h += '<li><span class="q">' + Kit.esc(c.name) + '</span><span class="a">' + Kit.math(c.ansM) + '</span><span class="s">' + Kit.esc(c.ansSay) + '</span></li>';
+    });
+    $('end-missed').innerHTML = h;
+    $('end-missed').hidden = !missed.length;
+    $('deal').focus();
+  }
+
+  function paintSets() {
+    Array.prototype.forEach.call($('sets').querySelectorAll('button'), function (b) {
+      b.setAttribute('aria-pressed', b.dataset.set === setId ? 'true' : 'false');
+    });
+    var notes = {
+      values: 'Values: the 18 exact values of sin, cos and tan.',
+      formulas: 'Formulas: the 16 identities, from reciprocal through half-angle.',
+      graphs: 'Graphs: period, range, gaps and starting value for all six functions.'
+    };
+    $('set-note').textContent = setId === 'mix' ? MIX[WEEK].note : notes[setId];
+  }
+  Array.prototype.forEach.call($('sets').querySelectorAll('button'), function (b) {
+    b.addEventListener('click', function () {
+      if (b.dataset.set === setId) return;
+      setId = b.dataset.set; Kit.save('set', setId);
+      paintSets(); dealRound();
+    });
+  });
+  $('reveal').addEventListener('click', reveal);
+  $('got').addEventListener('click', function () { mark(true); });
+  $('miss').addEventListener('click', function () { mark(false); });
+  $('deal').addEventListener('click', dealRound);
+
+  /* ---------- Friday checks ---------- */
+  var IDS = WEEKS.map(function (w) { return w.id; });
+  var checks = {}, state = {}, editing = {}, busy = {}, again = {};
+  var shared = { db: null, canWrite: false }, sharedKnown = false, remoteOk = false, remoteSlow = false, loadTimer = null;
+  (function () {
+    var saved = Kit.load('checks', {});
+    if (!saved || typeof saved !== 'object') saved = {};
+    IDS.forEach(function (id) { checks[id] = cleanCheck(saved[id]); state[id] = checks[id].updated ? 'local' : 'none'; });
+  })();
+
+  function buildWeeks() {
+    var h = '';
+    WEEKS.forEach(function (w, i) {
+      var id = w.id, tag = weekTag(i + 1, TODAY), opts = '<option value="">Not set</option>';
+      for (var d = 0; d <= 5; d++) opts += '<option value="' + d + '">' + d + '</option>';
+      h += '<div class="panel wk"><div class="wk-head"><h3>' + w.title + '</h3><span class="dates">' + w.dates + '</span>' +
+        (tag ? '<span class="tag">' + tag + '</span>' : '') + '</div>' +
+        '<p><b>' + w.check + '</b> ' + w.how + '</p>' +
+        '<p class="goal">Goal: <b>' + w.goal + '</b></p>' +
+        '<label class="field" for="' + id + '-days">Days practiced this week (out of 5)<select id="' + id + '-days">' + opts + '</select></label>' +
+        '<label class="field" for="' + id + '-result">Result<input type="text" id="' + id + '-result" maxlength="80" autocomplete="off" placeholder="Time or score"></label>' +
+        '<label class="field" for="' + id + '-miss">Biggest miss<input type="text" id="' + id + '-miss" maxlength="120" autocomplete="off" placeholder="What to bring to tutoring"></label>' +
+        '<div class="row"><button type="button" class="primary" id="' + id + '-save">Save</button></div>' +
+        '<div class="status" id="' + id + '-status" aria-live="polite"></div></div>';
+    });
+    $('weeks').innerHTML = h;
+    IDS.forEach(function (id) {
+      ['days', 'result', 'miss'].forEach(function (f) {
+        var el = $(id + '-' + f);
+        el.addEventListener('input', function () { editing[id] = true; });
+        el.addEventListener('change', function () { editing[id] = true; });
+      });
+      $(id + '-save').addEventListener('click', function () { saveWeek(id); });
+      fillWeek(id); paintWeek(id);
+    });
+  }
+  function fillWeek(id) {
+    var b = checks[id];
+    $(id + '-days').value = b.days === null ? '' : String(b.days);
+    $(id + '-result').value = b.result;
+    $(id + '-miss').value = b.miss;
+  }
+  function when(iso) {
+    var d = new Date(iso);
+    return isNaN(d.getTime()) ? '' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+  function paintWeek(id) {
+    var el = $(id + '-status'), s = state[id], w = when(checks[id].updated), t = '', cls = 'status';
+    if (s === 'saving') t = 'Saving.';
+    else if (s === 'shared') { t = 'Saved' + (w ? ' ' + w : '') + '. Everyone with access to this page can see it.'; cls += ' good'; }
+    else if (s === 'refused') { t = 'The shared record refused the save. This note is kept on this device only.'; cls += ' bad'; }
+    else if (s === 'local') {
+      t = (sharedKnown && (!shared.db || !shared.canWrite)) ? 'Kept on this device only. This device cannot save to the shared record.' :
+        'Kept on this device only. Tap Save to send it to the shared record.';
+    }
+    el.className = cls; el.textContent = t;
+  }
+  function paintChecksNote() {
+    var t;
+    if (!sharedKnown) t = 'Checking the shared record.';
+    else if (!shared.db) t = 'The shared record is not available in this view. Notes you save stay on this device.';
+    else if (!shared.canWrite) t = 'This device can read the shared record but cannot save to it. Notes you save stay on this device. Ask the owner of this page for Contributor or Editor access.';
+    else if (remoteSlow) t = 'The shared record cannot be reached right now. You may be seeing this device\'s copy.';
+    else if (!remoteOk) t = 'Checking the shared record.';
+    else t = 'Notes saved here are shared with everyone who has access to this page.';
+    $('checks-note').textContent = t;
+  }
+  function saveWeek(id) {
+    var dv = $(id + '-days').value, days = dv === '' ? null : parseInt(dv, 10);
+    var body = cleanCheck({ days: days, result: $(id + '-result').value.trim(), miss: $(id + '-miss').value.trim(), updated: new Date().toISOString() });
+    checks[id] = body; editing[id] = false;
+    Kit.save('checks', checks);
+    if (!shared.db || !shared.canWrite) { state[id] = 'local'; paintWeek(id); return; }
+    if (busy[id]) { again[id] = true; return; }
+    busy[id] = true; state[id] = 'saving'; paintWeek(id);
+    var p;
+    try { p = shared.db.doc('checks/' + id).set({ days: body.days, result: body.result, miss: body.miss, updated: body.updated }); }
+    catch (e) { p = Promise.reject(e); }
+    p.then(function () {
+      busy[id] = false;
+      if (again[id]) { again[id] = false; saveWeek(id); return; }
+      state[id] = 'shared'; paintWeek(id);
+    }, function () {
+      busy[id] = false; again[id] = false; state[id] = 'refused'; paintWeek(id);
+    });
+  }
+  function connectChecks() {
+    Kit.shared().then(function (s) {
+      shared = s || { db: null, canWrite: false }; sharedKnown = true;
+      IDS.forEach(paintWeek); paintChecksNote();
+      if (!shared.db) return;
+      loadTimer = setTimeout(function () { if (!remoteOk) { remoteSlow = true; paintChecksNote(); } }, 10000);
+      try {
+        shared.db.collection('checks').onSnapshot(function (snap) {
+          if (!snap.metadata || !snap.metadata.fromCache) { clearTimeout(loadTimer); remoteOk = true; remoteSlow = false; }
+          var changed = false;
+          snap.docs.forEach(function (d) {
+            if (IDS.indexOf(d.id) < 0 || busy[d.id]) return;
+            var b = cleanCheck(d.data()), cur = checks[d.id];
+            if (!b.updated) return;
+            if (!cur.updated || b.updated > cur.updated) {
+              checks[d.id] = b; state[d.id] = 'shared'; changed = true;
+              if (!editing[d.id]) fillWeek(d.id);
+              paintWeek(d.id);
+            } else if (b.updated === cur.updated && state[d.id] !== 'shared') { state[d.id] = 'shared'; paintWeek(d.id); }
+          });
+          if (changed) Kit.save('checks', checks);
+          paintChecksNote();
+        }, function () { clearTimeout(loadTimer); remoteSlow = true; paintChecksNote(); });
+      } catch (e) { remoteSlow = true; paintChecksNote(); }
+    });
+  }
+
+  /* ---------- Boot ---------- */
+  buildWeeks();
+  paintSets();
+  dealRound();
+  Kit.start();
+  connectChecks();
+})();
+</script>

@@ -1,0 +1,1443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Six Trig Graphs">
+<title>Six Trig Graphs</title>
+<style>:root{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+Math&family=Space+Grotesk:wght@500;700&display=swap">
+</head>
+<body>
+<style>
+  /* ---- Shared kit: tokens, base, tabs, drill stage, keys, report. Page-specific CSS follows in its own <style>. ---- */
+  :root {
+    --bg: #EDF1F7;
+    --surface: #FFFFFF;
+    --sunk: #E1E7F0;
+    --ink: #14223A;
+    --muted: #55657F;
+    --line: #C3CEDF;
+    --grid: rgba(29, 78, 216, 0.07);
+    --accent: #1D4ED8;
+    --on-accent: #FFFFFF;
+    --mark: #FFE066;
+    --on-mark: #14223A;
+    --good: #157F52;
+    --good-bg: #DDF3E8;
+    --warn: #8A5A00;
+    --warn-bg: #FBEFD2;
+    --bad: #BE3A2B;
+    --bad-bg: #FBE4E0;
+    --font-display: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+    --font-body: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-math: "STIX Two Math", "Cambria Math", "Latin Modern Math", "Noto Sans Math", math, serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0E1626; --surface: #172238; --sunk: #111B2E; --ink: #E7EDF8; --muted: #9BAAC4;
+      --line: #2E3E5C; --grid: rgba(142, 168, 255, 0.07); --accent: #8EA8FF; --on-accent: #0E1626;
+      --mark: #F2CF4A; --on-mark: #14223A; --good: #5AD19A; --good-bg: #12382B;
+      --warn: #F0B94A; --warn-bg: #3A2D10; --bad: #FF8C7A; --bad-bg: #44201C; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E1626; --surface: #172238; --sunk: #111B2E; --ink: #E7EDF8; --muted: #9BAAC4;
+    --line: #2E3E5C; --grid: rgba(142, 168, 255, 0.07); --accent: #8EA8FF; --on-accent: #0E1626;
+    --mark: #F2CF4A; --on-mark: #14223A; --good: #5AD19A; --good-bg: #12382B;
+    --warn: #F0B94A; --warn-bg: #3A2D10; --bad: #FF8C7A; --bad-bg: #44201C; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.5; }
+  .wrap {
+    max-width: 920px; margin: 0 auto; padding-block: 28px 56px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    display: flex; flex-direction: column; gap: 22px;
+  }
+  math { font-family: var(--font-math); }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:disabled { cursor: default; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .head { display: flex; flex-direction: column; gap: 6px; }
+  .head h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.7rem, 5vw, 2.3rem); line-height: 1.1; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+  .head p { margin: 0; color: var(--muted); max-width: 60ch; }
+
+  .tabs { display: flex; gap: 2px 6px; flex-wrap: wrap; border-bottom: 1.5px solid var(--line); }
+  .tab { background: none; border: 0; border-bottom: 3px solid transparent; margin-bottom: -1.5px; padding: 10px 12px; font-family: var(--font-display); font-weight: 500; font-size: 1rem; color: var(--muted); }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+
+  /* Two-column working area: .main (the drill) and .side (progress). Add .tw for two equal columns. */
+  .work { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  @media (min-width: 820px) {
+    .work { grid-template-columns: minmax(0, 1fr) 270px; align-items: start; }
+    .work.tw { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; }
+  }
+  .main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+  /* Graph-paper surface for the thing being asked. */
+  .paper {
+    background-color: var(--surface);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 22px 22px; background-position: -1px -1px;
+  }
+  .stage {
+    background-color: var(--surface);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 22px 22px; background-position: -1px -1px;
+    border: 1.5px solid var(--line); border-radius: 14px; min-height: 170px; padding: 22px 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    transition: border-color .15s; min-width: 0;
+  }
+  .stage.ok { border-color: var(--good); }
+  .stage.no { border-color: var(--bad); }
+  .prompt { font-size: clamp(1.7rem, 7.5vw, 2.8rem); line-height: 1.15; text-align: center; max-width: 100%; }
+  .prompt.small { font-size: clamp(1.2rem, 5vw, 1.7rem); }
+  .tag { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--surface); padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  .panel { background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 14px; min-width: 0; }
+
+  .feedback { min-height: 3.1em; font-size: .95rem; color: var(--muted); }
+  .feedback b { color: var(--ink); font-weight: 600; }
+  .feedback.good b { color: var(--good); }
+  .feedback.bad b { color: var(--bad); }
+
+  /* Answer keys. Set --cols on the container to change the column count. */
+  .keypad { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: 8px; }
+  .key {
+    min-height: 62px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px;
+    font-size: 1.2rem; display: flex; align-items: center; justify-content: center; padding: 6px; text-align: center;
+    transition: border-color .12s, background-color .12s, transform .06s; min-width: 0;
+  }
+  .key:hover:not(:disabled) { border-color: var(--accent); }
+  .key:active:not(:disabled) { transform: scale(.97); }
+  .key:disabled { opacity: .55; }
+  .key.right { background: var(--good-bg); border-color: var(--good); opacity: 1; }
+  .key.wrong { background: var(--bad-bg); border-color: var(--bad); opacity: 1; }
+  .key.sel { border-color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .key.word { font-size: .92rem; font-weight: 500; }
+  .undef { font-family: var(--font-body); font-size: .8rem; font-weight: 500; }
+
+  .primary { background: var(--accent); color: var(--on-accent); border: 0; border-radius: 10px; padding: 13px 20px; font-family: var(--font-display); font-weight: 700; font-size: 1rem; }
+  .primary:disabled { background: var(--sunk); color: var(--muted); }
+  .ghost { background: none; border: 1.5px solid var(--line); border-radius: 10px; padding: 11px 16px; font-weight: 500; font-size: .95rem; }
+  .ghost:hover { border-color: var(--accent); }
+  .row { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+  .link { background: none; border: 0; padding: 0; color: var(--muted); font-size: .85rem; text-decoration: underline; text-underline-offset: 3px; align-self: flex-start; }
+  .link:hover { color: var(--ink); }
+
+  /* Finish session bar (added by the kit under the tabs when this device cannot save on its own) */
+  .sendbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 14px; font-size: .92rem; color: var(--muted); }
+  .sendbar span { flex: 1 1 200px; min-width: 0; }
+  .sendlink { background: var(--accent); color: var(--on-accent); border-radius: 10px; padding: 11px 16px; font-family: var(--font-display); font-weight: 700; font-size: .95rem; text-decoration: none; white-space: nowrap; }
+
+  /* Segmented control for switching modes inside a tab. Use aria-pressed. */
+  .seg { display: inline-flex; flex-wrap: wrap; border: 1.5px solid var(--line); border-radius: 10px; overflow: hidden; align-self: flex-start; }
+  .seg button { background: var(--surface); border: 0; padding: 8px 14px; font-size: .9rem; font-weight: 500; color: var(--muted); }
+  .seg button + button { border-left: 1.5px solid var(--line); }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+
+  .stats, .tiles { display: flex; flex-wrap: wrap; gap: 18px 30px; }
+  .stat { display: flex; flex-direction: column; }
+  .stat .n { font-family: var(--font-display); font-weight: 700; font-size: 1.7rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat .n small { font-size: 1rem; font-weight: 500; color: var(--muted); }
+  .stat .l { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: 5px; }
+
+  /* Mastery swatches: .lv is new, .lv1 .lv2 .lv3 fill toward automatic. */
+  .lv { display: block; height: 22px; border-radius: 5px; border: 1.5px solid var(--line); background: var(--sunk); }
+  .lv1 { background: color-mix(in srgb, var(--accent) 25%, var(--surface)); border-color: transparent; }
+  .lv2 { background: color-mix(in srgb, var(--accent) 58%, var(--surface)); border-color: transparent; }
+  .lv3 { background: var(--accent); border-color: transparent; }
+  .lv.now { outline: 2.5px solid var(--ink); outline-offset: 1px; }
+  .legend { display: flex; align-items: center; gap: 6px; font-size: .75rem; color: var(--muted); }
+  .legend .lv { width: 18px; height: 14px; border-radius: 4px; flex: none; }
+
+  .note { font-size: .85rem; color: var(--muted); margin: 0; max-width: 65ch; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: .9rem; color: var(--muted); }
+  .check input { width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+  .clock { font-family: var(--font-display); font-weight: 700; font-size: 2.2rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .scroll { overflow-x: auto; }
+  .steps { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; max-width: 65ch; }
+  mn.hl, mi.hl, mrow.hl { background: var(--mark); color: var(--on-mark); padding: 0 .12em; border-radius: 2px; }
+
+  .prose { display: flex; flex-direction: column; gap: 26px; }
+  .prose section { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .prose h2, .rep h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; margin: 0; text-wrap: balance; }
+  .prose p { margin: 0; max-width: 65ch; }
+
+  /* Report (built by the kit) */
+  .rep { display: flex; flex-direction: column; gap: 26px; }
+  .rep section { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .rep p { margin: 0; max-width: 65ch; }
+  .flags { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-width: 70ch; }
+  .flags li { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+  .pill { font-size: .68rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; text-align: center; padding: 2px 0; border-radius: 4px; }
+  .pill.bad { background: var(--bad-bg); color: var(--bad); }
+  .pill.warn { background: var(--warn-bg); color: var(--warn); }
+  .pill.ok { background: var(--good-bg); color: var(--good); }
+  .itable, .log { border-collapse: collapse; background: var(--surface); border: 1.5px solid var(--line); width: 100%; }
+  .itable { max-width: 620px; }
+  .itable th, .itable td, .log th, .log td { border-bottom: 1px solid var(--line); padding: 7px 10px; font-variant-numeric: tabular-nums; font-size: .9rem; text-align: right; }
+  .itable tr:last-child td, .log tr:last-child td { border-bottom: 0; }
+  .itable thead th, .log thead th { background: var(--sunk); font-size: .78rem; font-weight: 500; color: var(--muted); }
+  .itable th:first-child, .itable td:first-child, .log th:first-child, .log td:first-child { text-align: left; }
+  .itable tr.grp td { background: var(--sunk); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; text-align: left; }
+  .itable td.st { font-size: .7rem; letter-spacing: .05em; text-transform: uppercase; font-weight: 600; width: 76px; }
+  .itable tr.miss td { background: var(--bad-bg); } .itable tr.miss td.st { color: var(--bad); }
+  .itable tr.slow td { background: var(--warn-bg); } .itable tr.slow td.st { color: var(--warn); }
+  .itable tr.ok td.st { color: var(--good); }
+  .itable tr.none td { color: var(--muted); }
+  .log { min-width: 520px; }
+  .log th, .log td { white-space: nowrap; }
+  .log th:last-child, .log td:last-child { text-align: left; padding-left: 18px; }
+  .empty { color: var(--muted); }
+
+  @media (max-width: 420px) {
+    .key { font-size: 1.08rem; min-height: 56px; }
+    .tab { padding: 9px 9px; font-size: .95rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<style>
+  /* Page layout: the graph sits on a plain surface (its own grid is the graph paper); answers go under it. */
+  .gstage { background: var(--surface); border: 1.5px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; transition: border-color .15s; }
+  .gstage.ok { border-color: var(--good); }
+  .gstage.no { border-color: var(--bad); }
+  .gbox, .pbox { width: 100%; max-width: 560px; }
+  .pbox { max-width: 460px; }
+  .gbox svg, .pbox svg, .gcard svg { display: block; width: 100%; height: auto; }
+  .g-bg { fill: var(--surface); }
+  .g-grid { stroke: var(--line); stroke-width: 1; fill: none; }
+  .g-one { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 4; fill: none; }
+  .g-axis { stroke: var(--ink); stroke-width: 1.3; fill: none; }
+  .g-asym { stroke: var(--muted); stroke-width: 1.3; stroke-dasharray: 7 4; fill: none; }
+  .g-curve { stroke: var(--accent); stroke-width: 2.4; fill: none; stroke-linejoin: round; stroke-linecap: round; }
+  .g-over { stroke: var(--ink); stroke-width: 1.4; fill: none; opacity: .6; stroke-linejoin: round; }
+  .g-lab { fill: var(--muted); font-family: var(--font-body); font-size: 10.5px; }
+
+  .p-dot { fill: var(--line); }
+  .p-hit { fill: var(--surface); fill-opacity: 0; stroke: none; cursor: pointer; }
+  .p-hit:focus-visible { outline: none; stroke: var(--accent); stroke-width: 3; }
+  .p-pick { fill: var(--accent); }
+  .p-pick.right { fill: var(--good); }
+  .p-pick.wrong { fill: var(--bad); }
+  .p-true { fill: none; stroke: var(--good); stroke-width: 2.5; }
+  .p-aline { stroke: var(--accent); stroke-width: 2.4; stroke-dasharray: 7 5; fill: none; }
+  .p-aline.right { stroke: var(--good); }
+  .p-aline.wrong { stroke: var(--bad); }
+  .p-abtn { cursor: pointer; }
+  .p-abtn rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+  .p-abtn.sel rect { stroke: var(--accent); stroke-width: 2.5; }
+  .p-abtn:focus-visible { outline: none; }
+  .p-abtn:focus-visible rect { stroke: var(--accent); stroke-width: 3; }
+  .p-abtn line { stroke: var(--muted); stroke-width: 1.6; stroke-dasharray: 3 3; fill: none; }
+  .p-abtn text { fill: var(--muted); font-family: var(--font-body); font-size: 10px; }
+  .p-ok { fill: var(--good); font-family: var(--font-body); font-size: 13px; font-weight: 600; }
+  .p-no { fill: var(--bad); font-family: var(--font-body); font-size: 13px; font-weight: 600; }
+
+  .seg button { min-height: 44px; font-family: var(--font-math); font-size: 1.05rem; min-width: 64px; }
+  .seg button:disabled { opacity: .5; }
+  .fnkey { font-family: var(--font-math); font-size: 1.3rem; }
+  .ptask { margin: 0; max-width: 60ch; }
+  .fq { font-size: 1.1rem; font-weight: 500; text-align: center; background: var(--surface); padding: 2px 10px; border-radius: 8px; }
+  .lvrow { display: grid; grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr)); gap: 4px; }
+  .lvrow span.lab { font-family: var(--font-math); font-size: .85rem; text-align: center; color: var(--muted); }
+  .fgrid { border-collapse: separate; border-spacing: 3px; width: 100%; table-layout: fixed; margin: -3px; }
+  .fgrid th { font-weight: 500; font-size: .62rem; color: var(--muted); padding: 0; letter-spacing: .02em; }
+  .fgrid th.fn { text-align: left; width: 30px; font-family: var(--font-math); font-size: .9rem; color: var(--ink); font-weight: 400; }
+  .fgrid td { padding: 0; }
+  .fgrid .lv { height: 20px; }
+  .side .panel { display: flex; flex-direction: column; gap: 8px; }
+  .side .panel b { font-family: var(--font-display); }
+  .side .panel p { margin: 0; font-size: .9rem; }
+  .link { padding-block: 10px; }
+  .check { min-height: 44px; }
+  .sixgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 14px; }
+  .gcard { display: flex; flex-direction: column; gap: 8px; }
+  .gcard h3 { margin: 0; font-size: 1.2rem; font-weight: 400; }
+  .gfacts { margin: 0; display: grid; gap: 4px; font-size: .9rem; }
+  .gfacts div { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px; }
+  .gfacts dt { color: var(--muted); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; padding-top: 3px; }
+  .gfacts dd { margin: 0; }
+  .tells { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; max-width: 65ch; }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <h1>Six Trig Graphs</h1>
+    <p>Learn the shapes of sin, cos, tan, cot, sec and csc well enough to sketch each one from memory.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" id="tab-name" data-view="name" aria-selected="true">Name it</button>
+    <button class="tab" role="tab" id="tab-plot" data-view="plot" aria-selected="false">Plot it</button>
+    <button class="tab" role="tab" id="tab-facts" data-view="facts" aria-selected="false">Facts</button>
+    <button class="tab" role="tab" id="tab-all" data-view="all" aria-selected="false">All six</button>
+    <button class="tab" role="tab" id="tab-report" data-view="report" aria-selected="false">Report</button>
+  </nav>
+
+  <!-- Name it -->
+  <section id="view-name" role="tabpanel" aria-labelledby="tab-name">
+    <div class="work">
+      <div class="main">
+        <div class="gstage" id="name-stage">
+          <div class="gbox" id="name-graph"></div>
+          <div class="tag" id="name-tag">Which function is this?</div>
+        </div>
+        <div class="feedback" id="name-fb" aria-live="polite">Tap the function this graph shows. Keys 1 to 6 work too.</div>
+        <div class="keypad" id="keys-name"></div>
+        <button class="primary" id="name-next" hidden>Next graph</button>
+      </div>
+      <aside class="side" aria-label="Progress">
+        <div class="stats">
+          <div class="stat"><span class="n"><span id="name-auto">0</span><small>/6</small></span><span class="l">Automatic</span></div>
+          <div class="stat"><span class="n" id="name-streak">0</span><span class="l">Streak</span></div>
+        </div>
+        <div class="lvrow" id="name-lv"></div>
+        <div class="legend"><span>New</span><span class="lv"></span><span class="lv lv1"></span><span class="lv lv2"></span><span class="lv lv3"></span><span>Automatic</span></div>
+        <p class="note">A graph turns automatic after three right answers in a row, the last one in under 5 seconds. A miss sends it back to new.</p>
+        <button class="link" id="reset">Reset all levels on this device</button>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Plot it -->
+  <section id="view-plot" role="tabpanel" aria-labelledby="tab-plot" hidden>
+    <div class="work">
+      <div class="main">
+        <div class="seg" id="plot-seg" role="group" aria-label="Function to plot">
+          <button type="button" data-f="sin" aria-pressed="true">sin</button>
+          <button type="button" data-f="cos" aria-pressed="false">cos</button>
+          <button type="button" data-f="tan" aria-pressed="false">tan</button>
+        </div>
+        <p class="ptask" id="plot-task"></p>
+        <div class="gstage" id="plot-stage"><div class="pbox" id="plot-box"></div></div>
+        <div class="feedback" id="plot-fb" aria-live="polite"></div>
+        <div class="row">
+          <button class="primary" id="plot-check" disabled>Check</button>
+          <button class="ghost" id="plot-clear">Clear</button>
+          <button class="primary" id="plot-next" hidden>Next plot</button>
+        </div>
+      </div>
+      <aside class="side" aria-label="Progress">
+        <div class="stats">
+          <div class="stat"><span class="n"><span id="plot-auto">0</span><small>/3</small></span><span class="l">Automatic</span></div>
+        </div>
+        <div class="lvrow" id="plot-lv" style="--n: 3"></div>
+        <div class="panel">
+          <b>Shape check</b>
+          <p>Plot sin, cos and tan back to back, from memory. All three right is a pass.</p>
+          <button class="ghost" id="sc-start">Start shape check</button>
+          <p class="note" id="sc-status"></p>
+        </div>
+        <p class="note">A plot turns automatic after three right in a row. Plots are not timed.</p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Facts -->
+  <section id="view-facts" role="tabpanel" aria-labelledby="tab-facts" hidden>
+    <div class="work">
+      <div class="main">
+        <div class="stage" id="fact-stage">
+          <div class="prompt" id="fact-fn" aria-live="polite"></div>
+          <div class="fq" id="fact-q"></div>
+        </div>
+        <div class="feedback" id="fact-fb" aria-live="polite">Pick the answer. Number keys work too.</div>
+        <div class="keypad" id="keys-facts"></div>
+        <button class="primary" id="fact-next" hidden>Next question</button>
+      </div>
+      <aside class="side" aria-label="Progress">
+        <div class="stats">
+          <div class="stat"><span class="n"><span id="fact-auto">0</span><small>/36</small></span><span class="l">Automatic</span></div>
+          <div class="stat"><span class="n" id="fact-streak">0</span><span class="l">Streak</span></div>
+        </div>
+        <table class="fgrid" id="fact-grid" aria-label="Progress on each fact"></table>
+        <div class="legend"><span>New</span><span class="lv"></span><span class="lv lv1"></span><span class="lv lv2"></span><span class="lv lv3"></span><span>Automatic</span></div>
+        <p class="note">Six facts for each graph: period, range, value at 0, zeros, where it is undefined, and its reciprocal.</p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- All six -->
+  <section id="view-all" role="tabpanel" aria-labelledby="tab-all" hidden>
+    <div class="prose">
+      <section>
+        <label class="check" for="all-over"><input type="checkbox" id="all-over"> Show each graph's reciprocal partner as a thin line</label>
+        <p class="note">Your sheet writes cosec for csc. They are the same function.</p>
+        <div class="sixgrid" id="all-grid"></div>
+      </section>
+      <section>
+        <h2>How to tell them apart</h2>
+        <ul class="tells" id="all-tells"></ul>
+      </section>
+    </div>
+  </section>
+
+  <section id="view-report" role="tabpanel" aria-labelledby="tab-report" hidden></section>
+</div>
+
+<script>
+/* Shared kit: storage, MathML helpers, spaced decks, practice records, shared database sync, report, tabs.
+   Usage in a page script:
+     Kit.init({ prefix, items, ... });   // 1. config (see init below)
+     ... build decks with Kit.deck(), build the page ...
+     Kit.start();                        // 2. wires tabs, shows the first view, connects the shared record
+*/
+var Kit = (function () {
+  'use strict';
+  var C = null, P = 'kit', view = '', VIEWS = [];
+
+  function $(id) { return document.getElementById(id); }
+  function load(k, d) { try { var s = localStorage.getItem(P + '.' + k); return s == null ? d : JSON.parse(s); } catch (e) { return d; } }
+  function save(k, v) { try { localStorage.setItem(P + '.' + k, JSON.stringify(v)); } catch (e) {} }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]; }); }
+  function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function pickOne(a) { return a[Math.floor(Math.random() * a.length)]; }
+
+  /* MathML. math(inner) is display style (full-size fractions); math(inner, true) is inline. */
+  function math(inner, inline) { return '<math' + (inline ? '' : ' displaystyle="true"') + '>' + inner + '</math>'; }
+  var M = {
+    n: function (s) { return '<mn>' + s + '</mn>'; },
+    i: function (s) { return '<mi>' + s + '</mi>'; },          /* variable or function name: x, θ, π, sin */
+    o: function (s) { return '<mo>' + s + '</mo>'; },          /* operator: + − = ± ( ) */
+    t: function (s) { return '<mtext>' + s + '</mtext>'; },
+    row: function (a) { return '<mrow>' + a + '</mrow>'; },
+    frac: function (a, b) { return '<mfrac><mrow>' + a + '</mrow><mrow>' + b + '</mrow></mfrac>'; },
+    sqrt: function (a) { return '<msqrt>' + a + '</msqrt>'; },
+    sup: function (a, b) { return '<msup><mrow>' + a + '</mrow><mrow>' + b + '</mrow></msup>'; },
+    sp: '<mspace width="0.3em"></mspace>',
+    fn: function (name, arg) { return '<mi>' + name + '</mi><mspace width="0.25em"></mspace>' + arg; }   /* sin x */
+  };
+
+  /*PURE-START*/
+  function fmt(ms) {
+    var t = Math.floor(ms / 100), m = Math.floor(t / 600), s = Math.floor((t % 600) / 10), d = t % 10;
+    return m + ':' + (s < 10 ? '0' : '') + s + '.' + d;
+  }
+  function num(x) { return (typeof x === 'number' && isFinite(x) && x > 0) ? x : 0; }
+  function dayNum(s) { var p = s.split('-'); return Math.round(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000); }
+  function fmtDate(s) {
+    var p = s.split('-');
+    return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+  function secs(ms) { return (ms / 1000).toFixed(1) + ' s'; }
+  function pct(x) { return Math.round(x * 100) + '%'; }
+  function listOf(items, max) {
+    var shown = items.slice(0, max).join(', ');
+    return items.length > max ? shown + ', and ' + (items.length - max) + ' more' : shown;
+  }
+
+  /* Turns saved day records into the report. cfg: { items:[{key,name,group}], slowMs, planDays, planMinutes, test } */
+  function summarize(docs, todayStr, cfg) {
+    var items = cfg.items || [], t0 = dayNum(todayStr), byDate = {}, per = {}, latest = null, T = cfg.test || null;
+    var pass = T ? (T.passScore || T.total) : 0, bestMs = null, bestScore = null;
+    items.forEach(function (it) { per[it.key] = { n: 0, n7: 0, w7: 0, ok7: 0, ms7: 0, st: 'none', avg: 0 }; });
+
+    docs.forEach(function (d) {
+      if (!d || typeof d.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(d.date)) return;
+      var age = Math.max(0, t0 - dayNum(d.date));
+      var day = byDate[d.date] || (byDate[d.date] = { date: d.date, age: age, answered: 0, correct: 0, msCorrect: 0, activeMs: 0, tests: [] });
+      day.answered += num(d.answered); day.correct += num(d.correct);
+      day.msCorrect += num(d.msCorrect); day.activeMs += num(d.activeMs);
+      (Array.isArray(d.tests) ? d.tests : []).forEach(function (t) {
+        if (!t) return;
+        var total = num(t.t), s = Math.min(num(t.s), total), ms = num(t.ms);
+        if (!total) return;
+        day.tests.push({ s: s, t: total, ms: ms });
+        if (bestScore === null || s > bestScore) bestScore = s;
+        if (s >= pass && ms && (bestMs === null || ms < bestMs)) bestMs = ms;
+      });
+      var rec = (d.items && typeof d.items === 'object') ? d.items : {};
+      items.forEach(function (it) {
+        var a = rec[it.key];
+        if (!Array.isArray(a)) return;
+        var n = num(a[0]), w = Math.min(num(a[1]), n), p = per[it.key];
+        p.n += n;
+        if (age < 7) { p.n7 += n; p.w7 += w; p.ok7 += n - w; p.ms7 += num(a[2]); }
+      });
+      if (typeof d.last === 'string' && (!latest || d.last > latest.last)) latest = d;
+    });
+
+    var log = Object.keys(byDate).sort().reverse().map(function (k) { return byDate[k]; })
+      .filter(function (d) { return d.answered > 0 || d.tests.length > 0; });
+    var out = { empty: !log.length, days7: 0, ms7: 0, done: latest ? num(latest.done) : 0, total: latest ? num(latest.total) : 0,
+      bestMs: bestMs, bestScore: bestScore, flags: [], per: per, log: log.slice(0, 14) };
+    if (out.empty) return out;
+
+    var tests7 = 0, lastTest = null, firstAge = 0, lastAge = log[0].age;
+    log.forEach(function (d) {
+      if (d.age > firstAge) firstAge = d.age;
+      if (d.age < 7) { out.days7++; out.ms7 += d.activeMs; tests7 += d.tests.length; }
+      if (!lastTest && d.tests.length) lastTest = d.tests[d.tests.length - 1];
+    });
+    var F = out.flags, planDays = cfg.planDays || 5, planMin = cfg.planMinutes || 5;
+
+    /* Usage */
+    if (lastAge >= 3) F.push({ lv: 'bad', text: 'No practice for ' + lastAge + ' days. The last session was ' + fmtDate(log[0].date) + '.' });
+    else if (out.days7 >= planDays) F.push({ lv: 'ok', text: out.days7 + ' practice days in the last 7. That is on plan.' });
+    else if (firstAge >= 6) F.push({ lv: 'warn', text: out.days7 + ' practice ' + (out.days7 === 1 ? 'day' : 'days') + ' in the last 7. The plan calls for ' + planDays + '.' });
+
+    /* Time */
+    var perDay = out.days7 ? out.ms7 / out.days7 : 0;
+    if (out.days7 && perDay < planMin * 48000) {
+      var mins = Math.round(perDay / 60000);
+      F.push({ lv: 'warn', text: 'Sessions are short: ' + (mins < 1 ? 'under a minute' : 'about ' + mins + ' min') + ' on practice days. The plan calls for ' + planMin + ' minutes a day here.' });
+    }
+
+    /* Weak items, last 7 days */
+    var missed = [], slow = [], untested = [];
+    items.forEach(function (it) {
+      var p = per[it.key];
+      if (p.n === 0) untested.push(it);
+      if (p.n7 === 0) return;
+      p.avg = p.ok7 ? p.ms7 / p.ok7 : 0;
+      if (p.w7 / p.n7 >= 0.25) { p.st = 'miss'; if (p.n7 >= 2) missed.push(it); }
+      else if (cfg.slowMs && p.avg > cfg.slowMs) { p.st = 'slow'; if (p.ok7 >= 2) slow.push(it); }
+      else p.st = 'ok';
+    });
+    missed.sort(function (x, y) { return per[y.key].w7 / per[y.key].n7 - per[x.key].w7 / per[x.key].n7; });
+    slow.sort(function (x, y) { return per[y.key].avg - per[x.key].avg; });
+    if (missed.length) F.push({ lv: 'bad', text: 'Missed most: ' + listOf(missed.map(function (it) { return it.name + ' (' + per[it.key].w7 + ' of ' + per[it.key].n7 + ' wrong)'; }), 5) + '.' });
+    if (slow.length) F.push({ lv: 'warn', text: 'Right but slow: ' + listOf(slow.map(function (it) { return it.name + ' (' + secs(per[it.key].avg) + ')'; }), 5) + '. The target is under ' + (cfg.slowMs / 1000) + ' seconds.' });
+
+    /* One group weaker than the others */
+    var gmap = {}, groups = [];
+    items.forEach(function (it) {
+      var g = it.group || '';
+      if (!g) return;
+      if (!gmap[g]) { gmap[g] = { g: g, n: 0, w: 0 }; groups.push(gmap[g]); }
+      gmap[g].n += per[it.key].n7; gmap[g].w += per[it.key].w7;
+    });
+    groups = groups.filter(function (x) { return x.n >= 6; });
+    groups.forEach(function (x) { x.acc = 1 - x.w / x.n; });
+    if (groups.length >= 2) {
+      groups.sort(function (x, y) { return x.acc - y.acc; });
+      var lo = groups[0], hi = groups[groups.length - 1];
+      if (hi.acc - lo.acc >= 0.15) F.push({ lv: 'warn', text: 'Weakest area: ' + lo.g + ', at ' + pct(lo.acc) + ' right. The strongest is ' + hi.g + ', at ' + pct(hi.acc) + '.' });
+    }
+    if (untested.length) F.push({ lv: 'warn', text: 'Not practiced yet: ' + listOf(untested.map(function (it) { return it.name; }), 6) + '.' });
+
+    /* Timed or scored test */
+    if (T) {
+      if (!tests7) F.push({ lv: 'warn', text: 'No ' + T.name + ' in the last 7 days.' });
+      else if (bestScore === null || bestScore < pass) F.push({ lv: 'warn', text: 'No passing ' + T.name + ' yet (needs ' + pass + ' of ' + T.total + '). The latest was ' + lastTest.s + ' of ' + lastTest.t + '.' });
+      else if (T.goalMs && bestMs !== null && bestMs >= T.goalMs) F.push({ lv: 'warn', text: 'The best passing ' + T.name + ' took ' + fmt(bestMs) + '. The goal is under ' + fmt(T.goalMs).replace(/\.\d$/, '') + '.' });
+      else F.push({ lv: 'ok', text: 'The ' + T.name + ' goal is met' + (bestMs ? ', best time ' + fmt(bestMs) : '') + '.' });
+    }
+    if (out.total && out.done >= out.total) F.push({ lv: 'ok', text: 'Everything here is at the top level (' + out.done + ' of ' + out.total + ').' });
+    return out;
+  }
+  /*PURE-END*/
+
+  /* ---------- Spaced deck: levels 0..3 per card, misses come back two cards later ---------- */
+  function deck(o) {
+    var key = 'deck.' + o.id, n = o.n, fast = o.fastMs === undefined ? 3000 : o.fastMs;
+    var lv = load(key, null), st = { last: -1, count: 0, queue: [] };
+    if (!Array.isArray(lv) || lv.length !== n) lv = [];
+    for (var i = 0; i < n; i++) lv[i] = (lv[i] === 1 || lv[i] === 2 || lv[i] === 3) ? lv[i] : 0;
+    function queued(c) { for (var q = 0; q < st.queue.length; q++) if (st.queue[q].c === c) return true; return false; }
+    return {
+      levels: lv,
+      /* next(filter): index of the next card; filter(i) optionally limits the pool */
+      next: function (filter) {
+        var okf = function (c) { return !filter || filter(c); };
+        for (var q = 0; q < st.queue.length; q++) {
+          var it = st.queue[q];
+          if (it.due <= st.count && it.c !== st.last && okf(it.c)) return st.queue.splice(q, 1)[0].c;
+        }
+        var w = [8, 4, 2, 1], pool = [], total = 0, c;
+        for (c = 0; c < n; c++) { if (c === st.last || queued(c) || !okf(c)) continue; total += w[lv[c]]; pool.push([c, total]); }
+        if (!pool.length) { for (c = 0; c < n; c++) if (okf(c) && c !== st.last) pool.push([c, ++total]); }
+        if (!pool.length) { for (c = 0; c < n; c++) if (okf(c)) pool.push([c, ++total]); }
+        if (!pool.length) return 0;
+        var r = Math.random() * total;
+        for (var j = 0; j < pool.length; j++) if (r < pool[j][1]) return pool[j][0];
+        return pool[pool.length - 1][0];
+      },
+      /* mark(i, ok, dtMs): returns the card's new level. Level 3 needs a right answer faster than fastMs. */
+      mark: function (c, ok, dt) {
+        st.count++; st.last = c;
+        if (ok) { var nb = Math.min(lv[c] + 1, 3); if (nb === 3 && fast && dt > fast) nb = 2; lv[c] = nb; }
+        else { lv[c] = 0; st.queue = st.queue.filter(function (x) { return x.c !== c; }); st.queue.push({ c: c, due: st.count + 2 }); }
+        save(key, lv);
+        return lv[c];
+      },
+      auto: function () { var a = 0; for (var c = 0; c < n; c++) if (lv[c] === 3) a++; return a; },
+      reset: function () { for (var c = 0; c < n; c++) lv[c] = 0; st.queue = []; st.last = -1; save(key, lv); }
+    };
+  }
+
+  /* ---------- Practice records (local first, then synced) ---------- */
+  var DEV = '', days = {}, dirty = {}, norec = false, lastAct = Date.now();
+  function todayStr() {
+    var d = new Date(), m = d.getMonth() + 1, x = d.getDate();
+    return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (x < 10 ? '0' : '') + x;
+  }
+  function dayDoc() {
+    var k = todayStr(), d = days[k];
+    if (!d || typeof d !== 'object' || d.date !== k) {
+      d = days[k] = { v: 2, date: k, device: DEV, answered: 0, correct: 0, msCorrect: 0, activeMs: 0, items: {}, tests: [], first: new Date().toISOString() };
+      var keys = Object.keys(days).sort();
+      while (keys.length > 90) { var old = keys.shift(); delete days[old]; delete dirty[old]; }
+    }
+    if (!d.items || typeof d.items !== 'object') d.items = {};
+    if (!Array.isArray(d.tests)) d.tests = [];
+    return d;
+  }
+  function stamp(d, addMs) {
+    d.activeMs = num(d.activeMs) + Math.round(addMs);
+    d.last = new Date().toISOString();
+    if (C.mastery) { try { var m = C.mastery(); d.done = num(m.done); d.total = num(m.total); } catch (e) {} }
+    lastAct = Date.now();
+    dirty[d.date] = 1;
+    save('days', days); save('dirty', dirty);
+    scheduleSync();
+    paintSend();
+  }
+
+  /* ---------- Finish session: a real link that carries this device's unsent days to the practice log ----------
+     Used only where the shared record cannot save (a visitor on an open link). The link holds counts and times, no names. */
+  var SEND_URL = '', sent = {};
+  function sendReady() { return /^https:\/\/script\.google\.com\/|^http:\/\/127\.0\.0\.1:/.test(SEND_URL); }
+  function sendOn() { return sendReady() && (dbState === 'off' || dbState === 'readonly'); }
+  function hasWork(d) { return !!d && typeof d.last === 'string' && (num(d.answered) > 0 || (Array.isArray(d.tests) && d.tests.length > 0)); }
+  /* encodeDay: one day record -> { x: compact numbers, m: "missed most" text, s: "right but slow" text } */
+  function encodeDay(d, items, slowMs, maxItems) {
+    var names = {}, list = [], missed = [], slow = [];
+    (items || []).forEach(function (it) { names[it.key] = it.name; });
+    Object.keys(d.items || {}).forEach(function (k) {
+      var a = d.items[k];
+      if (!Array.isArray(a) || !/^[A-Za-z0-9_]{1,40}$/.test(k)) return;
+      var n = num(a[0]), w = Math.min(num(a[1]), n), ms = Math.round(num(a[2])), ok = n - w, name = names[k] || k;
+      if (!n) return;
+      list.push({ k: k, n: n, w: w, ms: ms });
+      if (n >= 2 && w / n >= 0.25) missed.push([w / n, name + ' ' + w + '/' + n]);
+      else if (slowMs && ok >= 2 && ms / ok > slowMs) slow.push([ms / ok, name + ' ' + (ms / ok / 1000).toFixed(1) + 's']);
+    });
+    list.sort(function (x, y) { return y.w - x.w || y.n - x.n; });
+    function top(arr) { return arr.sort(function (x, y) { return y[0] - x[0]; }).slice(0, 4).map(function (x) { return x[1]; }).join(', '); }
+    var tests = (Array.isArray(d.tests) ? d.tests : []).slice(-10).map(function (t) { return num(t.s) + '.' + num(t.t) + '.' + Math.round(num(t.ms)); }).join('*');
+    var x = [String(d.date).replace(/-/g, ''), num(d.answered), num(d.correct), Math.round(num(d.msCorrect)), Math.round(num(d.activeMs)), num(d.done), num(d.total), tests,
+      list.slice(0, maxItems).map(function (i) { return i.k + '.' + i.n + '.' + i.w + '.' + i.ms; }).join('*')].join('~');
+    return { x: x, m: top(missed), s: top(slow) };
+  }
+  /* sendPlan: which days go in the link (today, plus up to two unsent earlier days), kept under a safe link length */
+  function sendPlan() {
+    var keys = Object.keys(days).filter(function (k) { return hasWork(days[k]); }).sort().reverse(), today = todayStr();
+    var unsent = keys.filter(function (k) { return sent[k] !== days[k].last; });
+    var pick = keys.filter(function (k) { return k === today || sent[k] !== days[k].last; }).slice(0, 3);
+    var url = SEND_URL + '?v=1&p=' + encodeURIComponent(document.title || 'Practice page') + '&d=' + DEV, used = [];
+    pick.forEach(function (k, i) {
+      var cap = 60, part = '', n = i + 1;
+      do {
+        var e = encodeDay(days[k], C.items, C.slowMs, cap);
+        part = '&x' + n + '=' + encodeURIComponent(e.x) + '&m' + n + '=' + encodeURIComponent(e.m) + '&s' + n + '=' + encodeURIComponent(e.s);
+        cap -= 10;
+      } while (url.length + part.length > 1900 && cap >= 0);
+      if (url.length + part.length > 1900) return;
+      url += part; used.push(k);
+    });
+    return { url: url, used: used, unsent: unsent };
+  }
+  function paintSend() {
+    var bar = $('kit-send');
+    if (!bar) return;
+    if (!sendOn()) { bar.hidden = true; return; }
+    var plan = sendPlan(), link = $('kit-send-link'), msg = $('kit-send-msg');
+    if (!plan.used.length) { bar.hidden = true; return; }
+    bar.hidden = false;
+    link.href = plan.url;
+    if (plan.unsent.length) {
+      msg.textContent = plan.unsent.length === 1 ? 'This practice is not sent yet. Tap Finish session when you are done.' : 'Practice from ' + plan.unsent.length + ' days is not sent yet.';
+      link.textContent = 'Finish session';
+    } else {
+      var at = load('sentAt', 0), when = at ? new Date(at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : '';
+      msg.textContent = 'Sent' + (when ? ' at ' + when : '') + '. If the new tab did not say Saved, send it again.';
+      link.textContent = 'Send again';
+    }
+  }
+  function mountSend() {
+    var nav = document.querySelector('.tabs');
+    if (!nav || !sendReady()) return;
+    sent = load('sent', {});
+    if (!sent || typeof sent !== 'object' || Array.isArray(sent)) sent = {};
+    var bar = document.createElement('div');
+    bar.className = 'sendbar'; bar.id = 'kit-send'; bar.hidden = true;
+    bar.innerHTML = '<span id="kit-send-msg"></span><a class="sendlink" id="kit-send-link" target="_blank" rel="noopener" href="#">Finish session</a>';
+    nav.parentNode.insertBefore(bar, nav.nextSibling);
+    $('kit-send-link').addEventListener('click', function () {
+      var plan = sendPlan();
+      plan.used.forEach(function (k) { sent[k] = days[k].last; });
+      save('sent', sent); save('sentAt', Date.now());
+      setTimeout(paintSend, 600);
+    });
+  }
+  /* recAnswer(key, ok, dtMs): one graded answer on one item. key must be an item key from init. */
+  function recAnswer(key, ok, dt) {
+    if (norec) return;
+    var d = dayDoc(), a = d.items[key];
+    if (!Array.isArray(a)) a = [0, 0, 0];
+    var ms = Math.min(Math.round(num(dt)), C.dtCapMs);
+    d.items[key] = [num(a[0]) + 1, num(a[1]) + (ok ? 0 : 1), num(a[2]) + (ok ? ms : 0)];
+    d.answered = num(d.answered) + 1;
+    if (ok) { d.correct = num(d.correct) + 1; d.msCorrect = num(d.msCorrect) + ms; }
+    stamp(d, Math.min(Date.now() - lastAct, C.idleCapMs));
+  }
+  /* recTest(score, total, ms, countTime): one finished test. countTime=false when its answers were already recorded with recAnswer. */
+  function recTest(score, total, ms, countTime) {
+    if (norec) return;
+    var d = dayDoc();
+    if (d.tests.length < 40) d.tests.push({ s: score, t: total, ms: Math.round(num(ms)) });
+    stamp(d, countTime === false ? 0 : Math.min(num(ms), 900000));
+  }
+
+  /* ---------- Shared record: one document per day per device ---------- */
+  var db = null, dbState = 'pending', remote = {}, remoteLoaded = false, remoteSlow = false;
+  var syncing = false, syncTimer = null, loadTimer = null, sharedResolve = null;
+  var sharedPromise = new Promise(function (res) { sharedResolve = res; });
+  function scheduleSync() {
+    if (!db || dbState !== 'on' || syncTimer) return;
+    syncTimer = setTimeout(flush, 12000);
+  }
+  function flush() {
+    clearTimeout(syncTimer); syncTimer = null;
+    if (!db || dbState !== 'on' || syncing) return;
+    var list = Object.keys(dirty).filter(function (k) { return days[k]; });
+    if (!list.length) return;
+    syncing = true;
+    var i = 0;
+    (function nextDoc() {
+      if (i >= list.length) { syncing = false; save('dirty', dirty); return; }
+      var k = list[i++], body;
+      try { body = JSON.parse(JSON.stringify(days[k])); } catch (e) { nextDoc(); return; }
+      delete dirty[k];
+      var done;
+      try { done = db.doc('days/' + k + '_' + DEV).set(body); } catch (e) { done = Promise.reject(e); }
+      done.then(nextDoc, function (e) {
+        dirty[k] = 1; syncing = false; save('dirty', dirty);
+        var code = e && e.code;
+        if (code === 'invalid_argument' || code === 'not_granted' || code === 'revoked' || code === 'transform_error') { dbState = 'readonly'; paintSource(); }
+      });
+    })();
+  }
+  function initShared() {
+    var c = window.claude;
+    if (!c || typeof c.use !== 'function') { dbState = 'off'; paintSource(); sharedResolve({ db: null, canWrite: false }); return; }
+    var userDone = c.use('user').then(function (u) {
+      if (!u || typeof u.can !== 'function') return null;
+      return u.can('data.write');
+    }).catch(function () { return null; }).then(function (ok) { if (ok === false) dbState = 'readonly'; return ok; });
+    c.use('db').then(function (ns) {
+      if (!ns) { dbState = 'off'; paintSource(); sharedResolve({ db: null, canWrite: false }); return; }
+      db = ns; if (dbState === 'pending') dbState = 'on';
+      loadTimer = setTimeout(function () { if (!remoteLoaded) { remoteSlow = true; paintSource(); } }, 10000);
+      try {
+        db.collection('days').onSnapshot(function (snap) {
+          var m = {};
+          snap.docs.forEach(function (d) { var b = d.data(); if (b) m[d.id] = b; });
+          remote = m;
+          if (!snap.metadata || !snap.metadata.fromCache) { clearTimeout(loadTimer); remoteLoaded = true; remoteSlow = false; }
+          if (view === 'report') renderReport();
+        }, function () { clearTimeout(loadTimer); remoteSlow = true; paintSource(); });
+      } catch (e) { remoteSlow = true; }
+      paintSource();
+      if (Object.keys(dirty).length) scheduleSync();
+      userDone.then(function (ok) { paintSource(); sharedResolve({ db: db, canWrite: ok !== false }); });
+    }, function () { dbState = 'off'; paintSource(); sharedResolve({ db: null, canWrite: false }); });
+  }
+  function paintSource() {
+    var el = $('kit-source'), t;
+    paintSend();
+    if (!el) return;
+    if (dbState === 'pending') t = 'Checking the shared record.';
+    else if (sendOn()) t = 'This report covers this device only. Practice is not saved anywhere else until you tap Finish session at the top of the page.';
+    else if (dbState === 'off') t = 'This report covers practice on this device only. It stays here between visits unless the browser\'s website data is cleared.';
+    else if (dbState === 'readonly') t = 'This device cannot save to the shared record, so its practice stays on this device. Ask the owner of this page for Contributor or Editor access.';
+    else if (remoteSlow) t = 'The shared record cannot be reached right now. This report may be missing practice from other devices.';
+    else if (!remoteLoaded) t = 'Checking the shared record.';
+    else t = 'This report combines practice from every device that can save to this page. It updates about 12 seconds after practice pauses.';
+    el.textContent = t;
+  }
+
+  /* ---------- Report ---------- */
+  function allDocs() {
+    var m = {}, k;
+    for (k in remote) if (Object.prototype.hasOwnProperty.call(remote, k)) m[k] = remote[k];
+    for (k in days) if (Object.prototype.hasOwnProperty.call(days, k)) m[k + '_' + DEV] = days[k];
+    return Object.keys(m).map(function (id) { return m[id]; });
+  }
+  function tile(n, label) { return '<div class="stat"><span class="n">' + n + '</span><span class="l">' + esc(label) + '</span></div>'; }
+  function minutes(ms) { var m = Math.round(ms / 60000); return (ms > 0 && m < 1) ? '&lt;1' : String(m); }
+  function renderReport() {
+    var box = $('kit-report');
+    if (!box) return;
+    var r = summarize(allDocs(), todayStr(), C), T = C.test || null, h = '';
+    h += '<section><h2>Last 7 days</h2><div class="tiles">' +
+      tile(r.days7 + '<small> of 7</small>', 'Days practiced') +
+      tile(minutes(r.ms7) + '<small> min</small>', 'Practice time');
+    if (C.mastery) h += tile(r.done + '<small>/' + (r.total || '–') + '</small>', C.masteryLabel || 'Mastered now');
+    if (T) h += tile(T.goalMs ? (r.bestMs ? fmt(r.bestMs) : '–') : (r.bestScore === null ? '–' : r.bestScore + '<small>/' + T.total + '</small>'), 'Best ' + T.name);
+    h += '</div></section>';
+    if (r.empty) {
+      h += '<section><p class="empty">No practice recorded yet. Answers on the other tabs will show up here.</p></section>';
+    } else {
+      var words = { bad: 'Fix', warn: 'Watch', ok: 'Good' }, label = { miss: 'misses', slow: 'slow', ok: 'solid', none: '' };
+      h += '<section><h2>What to work on</h2><ul class="flags">';
+      r.flags.forEach(function (f) { h += '<li><span class="pill ' + f.lv + '">' + words[f.lv] + '</span><span>' + esc(f.text) + '</span></li>'; });
+      h += '</ul></section>';
+
+      var timed = !!C.slowMs, cols = timed ? 4 : 3, lastG = null;
+      h += '<section><h2>Each item, last 7 days</h2><p class="note">Right answers out of tries' + (timed ? ', and the average time on right answers.' : '.') + '</p><div class="scroll"><table class="itable"><thead><tr><th scope="col">Item</th><th scope="col">Right</th>' + (timed ? '<th scope="col">Avg time</th>' : '') + '<th scope="col"></th></tr></thead><tbody>';
+      C.items.forEach(function (it) {
+        var p = r.per[it.key], g = it.group || '';
+        if (g && g !== lastG) { h += '<tr class="grp"><td colspan="' + cols + '">' + esc(g) + '</td></tr>'; lastG = g; }
+        if (!p.n7) { h += '<tr class="none"><td>' + esc(it.name) + '</td><td>no tries</td>' + (timed ? '<td></td>' : '') + '<td class="st"></td></tr>'; return; }
+        h += '<tr class="' + p.st + '"><td>' + esc(it.name) + '</td><td>' + p.ok7 + '/' + p.n7 + '</td>' + (timed ? '<td>' + (p.ok7 ? secs(p.avg) : '–') + '</td>' : '') + '<td class="st">' + label[p.st] + '</td></tr>';
+      });
+      h += '</tbody></table></div></section>';
+
+      h += '<section><h2>Day by day</h2><div class="scroll"><table class="log"><thead><tr><th scope="col">Day</th><th scope="col">Minutes</th><th scope="col">Answers</th><th scope="col">Right</th>' + (timed ? '<th scope="col">Avg time</th>' : '') + '<th scope="col">' + (T ? esc(T.name) : '') + '</th></tr></thead><tbody>';
+      r.log.forEach(function (d) {
+        var tb = T ? '–' : '';
+        if (T && d.tests.length) {
+          var top = d.tests.slice().sort(function (x, y) { return y.s - x.s || x.ms - y.ms; })[0];
+          tb = d.tests.length + ', best ' + top.s + '/' + top.t + (top.ms ? ' in ' + fmt(top.ms) : '');
+        }
+        h += '<tr><td>' + esc(fmtDate(d.date)) + '</td><td>' + minutes(d.activeMs) + '</td><td>' + d.answered + '</td><td>' +
+          (d.answered ? pct(Math.min(d.correct, d.answered) / d.answered) : '–') + '</td>' +
+          (timed ? '<td>' + (d.correct ? secs(d.msCorrect / d.correct) : '–') + '</td>' : '') + '<td>' + tb + '</td></tr>';
+      });
+      h += '</tbody></table></div></section>';
+    }
+    box.innerHTML = h;
+    paintSource();
+    if (C.onReport) { try { C.onReport(r); } catch (e) {} }
+  }
+
+  /* ---------- Tabs ---------- */
+  function show(v, push) {
+    if (VIEWS.indexOf(v) < 0) v = VIEWS[0];
+    view = v;
+    VIEWS.forEach(function (n) {
+      var sec = $('view-' + n), tab = $('tab-' + n);
+      if (sec) sec.hidden = n !== v;
+      if (tab) tab.setAttribute('aria-selected', n === v ? 'true' : 'false');
+    });
+    if (v === 'report') { flush(); renderReport(); }
+    if (push) { try { history.replaceState(null, '', '#' + v); } catch (e) { try { location.hash = v; } catch (e2) {} } }
+    if (C.onShow) C.onShow(v);
+  }
+
+  /* digitKeys(getContainer): number keys 1-9 press the nth enabled .key in the container returned for the current view. */
+  function digitKeys(getContainer) {
+    document.addEventListener('keydown', function (e) {
+      if (e.metaKey || e.ctrlKey || e.altKey || !e.key) return;
+      var tag = e.target && e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      var n = '123456789'.indexOf(e.key);
+      if (n < 0) return;
+      var box = getContainer(view);
+      if (!box) return;
+      var b = box.querySelectorAll('.key')[n];
+      if (b && !b.disabled) { e.preventDefault(); b.click(); }
+    });
+  }
+
+  /* init(config):
+       prefix        string, unique per page; namespaces this page's saved data on the device
+       items         [{ key, name, group }]  key: letters/digits/_ only; name: plain text shown in the report
+       slowMs        right answers slower than this are flagged "slow" (default 3000); null for untimed work
+       planDays      practice days per week the plan asks for (default 5)
+       planMinutes   minutes per day the plan asks for on this page (default 5)
+       idleCapMs     longest gap between answers that still counts as practice time (default 20000)
+       dtCapMs       cap on one answer's time when averaging (default 20000)
+       test          { name, total, passScore?, goalMs? } or null; results go in with recTest()
+       mastery       function returning { done, total }, shown as a tile and saved with each record; or null
+       masteryLabel  tile label (default "Mastered now")
+       norecLabel    label for the don't-record checkbox
+       onShow(view)  called whenever a tab is shown
+       onReport(r)   called after the report renders */
+  function init(config) {
+    C = config || {};
+    P = C.prefix || 'kit';
+    C.items = C.items || [];
+    if (C.slowMs === undefined) C.slowMs = 3000;
+    C.idleCapMs = C.idleCapMs || 20000;
+    C.dtCapMs = C.dtCapMs || 20000;
+    DEV = load('dev', null);
+    if (typeof DEV !== 'string' || !/^[a-z0-9]{6}$/.test(DEV)) {
+      DEV = ''; for (var i = 0; i < 6; i++) DEV += 'abcdefghijkmnpqrstuvwxyz23456789'.charAt(Math.floor(Math.random() * 32));
+      save('dev', DEV);
+    }
+    days = load('days', {});
+    if (!days || typeof days !== 'object' || Array.isArray(days)) days = {};
+    dirty = load('dirty', {});
+    if (!dirty || typeof dirty !== 'object' || Array.isArray(dirty)) dirty = {};
+    norec = load('norec', false) === true;
+    var rv = $('view-report');
+    if (rv) {
+      rv.innerHTML = '<div class="rep"><div id="kit-report" class="rep"></div><section><p class="note" id="kit-source"></p>' +
+        '<label class="check" for="kit-norec"><input type="checkbox" id="kit-norec"> ' + esc(C.norecLabel || "Don't record practice on this device (for a parent trying it out)") + '</label></section></div>';
+      $('kit-norec').checked = norec;
+      $('kit-norec').addEventListener('change', function () { norec = $('kit-norec').checked; save('norec', norec); });
+    }
+  }
+  /* start(): call once, after the page has built its own DOM and decks. */
+  function start() {
+    VIEWS = Array.prototype.map.call(document.querySelectorAll('.tab'), function (t) { return t.dataset.view; });
+    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) {
+      t.addEventListener('click', function () { show(t.dataset.view, true); });
+    });
+    window.addEventListener('hashchange', function () { show(location.hash.replace('#', ''), false); });
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flush(); });
+    window.addEventListener('pagehide', flush);
+    mountSend();
+    paintSource();
+    show(location.hash.replace('#', ''), false);
+    initShared();
+  }
+
+  return {
+    $: $, load: load, save: save, esc: esc, shuffle: shuffle, pickOne: pickOne,
+    math: math, M: M, fmt: fmt, secs: secs, pct: pct,
+    init: init, start: start, show: show, view: function () { return view; },
+    deck: deck, recAnswer: recAnswer, recTest: recTest, digitKeys: digitKeys,
+    shared: function () { return sharedPromise; },      /* resolves { db, canWrite } once known; db is null when unavailable */
+    recording: function () { return !norec; },
+    today: todayStr, _summarize: summarize, _encodeDay: encodeDay, _sendPlan: sendPlan
+  };
+})();
+</script>
+<script>
+(function () {
+  'use strict';
+  var $ = Kit.$, M = Kit.M;
+
+  /*PURE-START*/
+  var PI = Math.PI;
+  var FN = {
+    sin: function (x) { return Math.sin(x); },
+    cos: function (x) { return Math.cos(x); },
+    tan: function (x) { return Math.sin(x) / Math.cos(x); },
+    cot: function (x) { return Math.cos(x) / Math.sin(x); },
+    sec: function (x) { return 1 / Math.cos(x); },
+    csc: function (x) { return 1 / Math.sin(x); }
+  };
+  /* period is in units of π. Sets: 'npi' = every multiple of π, 'odd' = odd multiples of π/2, 'none' = nowhere. */
+  var FUNCS = [
+    { id: 'sin', word: 'sine',      period: 2, range: 'unit',  at0: 0,    zeros: 'npi',  asym: 'none', recip: 'csc' },
+    { id: 'cos', word: 'cosine',    period: 2, range: 'unit',  at0: 1,    zeros: 'odd',  asym: 'none', recip: 'sec' },
+    { id: 'tan', word: 'tangent',   period: 1, range: 'all',   at0: 0,    zeros: 'npi',  asym: 'odd',  recip: 'cot' },
+    { id: 'cot', word: 'cotangent', period: 1, range: 'all',   at0: null, zeros: 'odd',  asym: 'npi',  recip: 'tan' },
+    { id: 'sec', word: 'secant',    period: 2, range: 'outer', at0: 1,    zeros: 'none', asym: 'odd',  recip: 'cos' },
+    { id: 'csc', word: 'cosecant',  period: 2, range: 'outer', at0: null, zeros: 'none', asym: 'npi',  recip: 'sin' }
+  ];
+  var BY = {};
+  FUNCS.forEach(function (f) { BY[f.id] = f; });
+
+  /* x values of a set inside the window from −2π to 2π */
+  function setXs(kind) {
+    var out = [], k;
+    if (kind === 'npi') for (k = -2; k <= 2; k++) out.push(k * PI);
+    else if (kind === 'odd') for (k = -3; k <= 3; k += 2) out.push(k * PI / 2);
+    else if (kind === 'only0') out.push(0);
+    return out;
+  }
+  var PERIOD_TEXT = { p05: 'π/2', p1: 'π', p2: '2π', p4: '4π' };
+  var RANGE_TEXT = { unit: 'From −1 to 1', all: 'All real numbers', outer: 'At most −1, or at least 1', pos: 'From 0 to 1' };
+  var SET_TEXT = { npi: 'At every multiple of π', odd: 'At odd multiples of π/2', only0: 'Only at 0', none: 'Nowhere' };
+  var DOMAIN_TEXT = { none: 'All real numbers', odd: 'All x except odd multiples of π/2', npi: 'All x except multiples of π' };
+
+  var FACTS = [
+    { id: 'period', short: 'period',          q: 'What is its period?' },
+    { id: 'range',  short: 'range',           q: 'What is its range?' },
+    { id: 'at0',    short: 'value at 0',      q: 'What is its value at x = 0?' },
+    { id: 'zeros',  short: 'zeros',           q: 'Where does it equal 0?' },
+    { id: 'undef',  short: 'where undefined', q: 'Where is it undefined?' },
+    { id: 'recip',  short: 'reciprocal',      q: 'Which function is 1 divided by it?' }
+  ];
+  function factAnswer(fid, tid) {
+    var f = BY[fid];
+    if (tid === 'period') return f.period === 2 ? 'p2' : 'p1';
+    if (tid === 'range') return f.range;
+    if (tid === 'at0') return f.at0 === null ? 'und' : (f.at0 === 0 ? 'v0' : (f.at0 === 1 ? 'v1' : 'vm1'));
+    if (tid === 'zeros') return f.zeros;
+    if (tid === 'undef') return f.asym;
+    return f.recip;
+  }
+  function factOptions(tid) {
+    function from(ids, text) { return ids.map(function (id) { return { id: id, t: text[id] }; }); }
+    if (tid === 'period') return from(['p05', 'p1', 'p2', 'p4'], PERIOD_TEXT);
+    if (tid === 'range') return from(['unit', 'all', 'outer', 'pos'], RANGE_TEXT);
+    if (tid === 'at0') return [{ id: 'v0', t: '0' }, { id: 'v1', t: '1' }, { id: 'vm1', t: '−1' }, { id: 'und', t: 'Undefined' }];
+    if (tid === 'zeros' || tid === 'undef') return from(['npi', 'odd', 'only0', 'none'], SET_TEXT);
+    return FUNCS.map(function (f) { return { id: f.id, t: f.id }; });
+  }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  var AT0_WHY = {
+    sin: 'sin 0 = 0. The sine wave passes through the origin.',
+    cos: 'cos 0 = 1. The cosine wave starts at its top.',
+    tan: 'tan 0 = sin 0 ÷ cos 0 = 0 ÷ 1 = 0.',
+    cot: 'cot 0 = cos 0 ÷ sin 0 = 1 ÷ 0. You cannot divide by 0, so it is undefined.',
+    sec: 'sec 0 = 1 ÷ cos 0 = 1 ÷ 1 = 1.',
+    csc: 'csc 0 = 1 ÷ sin 0 = 1 ÷ 0. You cannot divide by 0, so it is undefined.'
+  };
+  function factWhy(fid, tid) {
+    var f = BY[fid], w = f.word, W = cap(w), r = f.recip;
+    if (tid === 'period') {
+      if (f.period === 1) return 'Tangent and cotangent repeat every π. That is twice as often as sine and cosine.';
+      if (f.range === 'outer') return W + ' is 1 ÷ ' + r + ' x, so it repeats when ' + BY[r].word + ' does: every 2π.';
+      return W + ' needs a full turn of the unit circle to repeat. A full turn is 2π.';
+    }
+    if (tid === 'range') {
+      if (f.range === 'unit') return W + ' is a coordinate on the unit circle, so it never goes above 1 or below −1.';
+      if (f.range === 'all') return 'Each piece of ' + w + ' runs from far below to far above, so it reaches every number.';
+      return W + ' is 1 ÷ ' + r + ' x. ' + cap(BY[r].word) + ' stays between −1 and 1, so 1 over it is never between −1 and 1.';
+    }
+    if (tid === 'at0') return AT0_WHY[fid];
+    if (tid === 'zeros') {
+      if (fid === 'sin') return 'Sine is 0 at 0, π, 2π and every other multiple of π.';
+      if (fid === 'cos') return 'Cosine is 0 at π/2, 3π/2 and every other odd multiple of π/2.';
+      if (fid === 'tan') return 'Tangent is sin x ÷ cos x, so it is 0 where sine is 0: every multiple of π.';
+      if (fid === 'cot') return 'Cotangent is cos x ÷ sin x, so it is 0 where cosine is 0: odd multiples of π/2.';
+      return '1 divided by a number is never 0, so ' + w + ' never touches the x-axis.';
+    }
+    if (tid === 'undef') {
+      if (f.asym === 'none') return W + ' is defined for every x. Its graph has no breaks and no asymptotes.';
+      if (f.asym === 'odd') return W + ' divides by cos x, so it breaks where cosine is 0: odd multiples of π/2.';
+      return W + ' divides by sin x, so it breaks where sine is 0: every multiple of π.';
+    }
+    if (f.range === 'unit' || fid === 'tan') return r + ' x is defined as 1 ÷ ' + fid + ' x.';
+    return fid + ' x is defined as 1 ÷ ' + r + ' x, so 1 ÷ ' + fid + ' x gives back ' + r + ' x.';
+  }
+
+  /* Label for q quarters of π: 2 -> π/2, 6 -> 3π/2, -8 -> −2π */
+  function piLabel(q) {
+    if (q === 0) return '0';
+    var a = Math.abs(q), g = (a % 4 === 0) ? 4 : (a % 2 === 0 ? 2 : 1), n = a / g, d = 4 / g;
+    return (q < 0 ? '−' : '') + (n === 1 ? '' : n) + 'π' + (d === 1 ? '' : '/' + d);
+  }
+
+  /* Plot keys: q = x positions in quarters of π; key = y value there, or 'A' for an asymptote. */
+  var PLOTS = {
+    sin: { q: [0, 2, 4, 6, 8],   key: [0, 1, 0, -1, 0] },
+    cos: { q: [0, 2, 4, 6, 8],   key: [1, 0, -1, 0, 1] },
+    tan: { q: [-2, -1, 0, 1, 2], key: ['A', -1, 0, 1, 'A'] }
+  };
+  var PLOT_IDS = ['sin', 'cos', 'tan'];
+  function gradePlot(fid, picks) {
+    var key = PLOTS[fid].key, cols = [], ok = true;
+    for (var i = 0; i < key.length; i++) { cols.push(picks[i] === key[i]); if (!cols[i]) ok = false; }
+    return { ok: ok, cols: cols };
+  }
+  var PLOT_WHY = {
+    sin: 'One period of sine goes 0, up to 1, back to 0, down to −1, back to 0.',
+    cos: 'One period of cosine starts at the top and goes 1, 0, −1, 0, 1.',
+    tan: 'Tangent has asymptotes at −π/2 and π/2, where cosine is 0. Between them it goes −1, 0, 1.'
+  };
+  function plotWhy(fid, cols) {
+    var P = PLOTS[fid], fix = [];
+    for (var i = 0; i < cols.length; i++) {
+      if (cols[i]) continue;
+      fix.push('at ' + piLabel(P.q[i]) + (P.key[i] === 'A' ? ' there is an asymptote' : ' it is ' + String(P.key[i]).replace('-', '−')));
+    }
+    return PLOT_WHY[fid] + (fix.length ? ' Fix: ' + fix.join('; ') + '.' : '');
+  }
+
+  /* Curve as separate pieces: a piece ends wherever the value leaves ±lim, so no line crosses an asymptote. */
+  function sampleSegs(fid, x0, x1, n, lim) {
+    var f = FN[fid], segs = [], cur = null, i, x, y;
+    for (i = 0; i <= n; i++) {
+      x = x0 + (x1 - x0) * i / n; y = f(x);
+      if (!isFinite(y) || Math.abs(y) > lim) { cur = null; continue; }
+      if (!cur) { cur = []; segs.push(cur); }
+      cur.push([x, y]);
+    }
+    return segs.filter(function (s) { return s.length > 1; });
+  }
+
+  var TELL = {
+    sin: 'Sine is a smooth wave that passes through 0 when x is 0, then rises to 1 at π/2.',
+    cos: 'Cosine is a smooth wave that starts at its top, 1, when x is 0.',
+    tan: 'Tangent passes through 0 at x = 0 and climbs from left to right in every piece. Its nearest asymptotes are at −π/2 and π/2.',
+    cot: 'Cotangent falls from left to right in every piece. It has an asymptote at x = 0 and crosses zero at π/2.',
+    sec: 'Secant is a row of U shapes that never come between −1 and 1. One U sits right on x = 0, with its bottom at 1.',
+    csc: 'Cosecant is a row of U shapes that never come between −1 and 1. It has an asymptote at x = 0.'
+  };
+  /*PURE-END*/
+
+  /* ---------- Items and kit setup ---------- */
+  var ITEMS = [];
+  FUNCS.forEach(function (f) {
+    ITEMS.push({ key: 'name_' + f.id, name: 'Name the ' + f.id + ' graph', group: f.id });
+    if (PLOTS[f.id]) ITEMS.push({ key: 'plot_' + f.id, name: 'Plot ' + f.id, group: f.id });
+    FACTS.forEach(function (t) { ITEMS.push({ key: 'fact_' + f.id + '_' + t.id, name: f.id + ': ' + t.short, group: f.id }); });
+  });
+  var nameDeck, factDeck, plotDeck;
+
+  Kit.init({
+    prefix: 'graphs', items: ITEMS, slowMs: 5000, planDays: 5, planMinutes: 10,
+    idleCapMs: 45000, dtCapMs: 60000,
+    test: { name: 'shape check', total: 3, passScore: 3 },
+    mastery: function () { return { done: nameDeck.auto() + factDeck.auto() + plotDeck.auto(), total: ITEMS.length }; },
+    masteryLabel: 'Automatic now',
+    onShow: onShow, onReport: onReport
+  });
+  nameDeck = Kit.deck({ id: 'name', n: 6, fastMs: 5000 });
+  factDeck = Kit.deck({ id: 'fact', n: 36, fastMs: 5000 });
+  plotDeck = Kit.deck({ id: 'plot', n: 3, fastMs: null });
+
+  /* ---------- Drawing ---------- */
+  var gid = 0;
+  function graphSVG(fid, over, label) {
+    var W = 360, H = 222, L = 12, R = 348, T = 8, B = 196, mid = (T + B) / 2, S = (B - T) / 6, id = 'gc' + (++gid), h = '', k;
+    function px(x) { return (L + (x + 2 * PI) / (4 * PI) * (R - L)).toFixed(1); }
+    function py(y) { return (mid - y * S).toFixed(1); }
+    function curve(f, cls) {
+      var d = sampleSegs(f, -2 * PI, 2 * PI, 480, 8).map(function (seg) {
+        return 'M' + seg.map(function (p) { return px(p[0]) + ',' + py(p[1]); }).join('L');
+      }).join('');
+      return '<path class="' + cls + '" fill="none" clip-path="url(#' + id + ')" d="' + d + '"></path>';
+    }
+    h += '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + Kit.esc(label) + '">';
+    h += '<defs><clipPath id="' + id + '"><rect x="' + L + '" y="' + T + '" width="' + (R - L) + '" height="' + (B - T) + '"></rect></clipPath></defs>';
+    h += '<rect class="g-bg" x="' + L + '" y="' + T + '" width="' + (R - L) + '" height="' + (B - T) + '"></rect>';
+    for (k = -4; k <= 4; k++) h += '<line class="g-grid" x1="' + px(k * PI / 2) + '" y1="' + T + '" x2="' + px(k * PI / 2) + '" y2="' + B + '"></line>';
+    for (k = -3; k <= 3; k++) if (k) h += '<line class="' + (Math.abs(k) === 1 ? 'g-one' : 'g-grid') + '" x1="' + L + '" y1="' + py(k) + '" x2="' + R + '" y2="' + py(k) + '"></line>';
+    h += '<line class="g-axis" x1="' + L + '" y1="' + py(0) + '" x2="' + R + '" y2="' + py(0) + '"></line>';
+    h += '<line class="g-axis" x1="' + px(0) + '" y1="' + T + '" x2="' + px(0) + '" y2="' + B + '"></line>';
+    setXs(BY[fid].asym).forEach(function (x) { h += '<line class="g-asym" x1="' + px(x) + '" y1="' + T + '" x2="' + px(x) + '" y2="' + B + '"></line>'; });
+    if (over) h += curve(over, 'g-over');
+    h += curve(fid, 'g-curve');
+    for (k = -4; k <= 4; k++) h += '<text class="g-lab" x="' + px(k * PI / 2) + '" y="' + (B + 16) + '" text-anchor="middle">' + piLabel(k * 2) + '</text>';
+    h += '<text class="g-lab" x="' + (+px(0) - 4) + '" y="' + (+py(1) - 3) + '" text-anchor="end">1</text>';
+    h += '<text class="g-lab" x="' + (+px(0) - 4) + '" y="' + (+py(-1) + 11) + '" text-anchor="end">−1</text>';
+    return h + '</svg>';
+  }
+  function fnMath(fid) { return Kit.math(M.fn(fid, M.i('x'))); }
+  function paintLevels(boxId, deck, labels) {
+    var h = '';
+    labels.forEach(function (lab, i) { var lv = deck.levels[i]; h += '<span class="lv' + (lv ? ' lv' + lv : '') + '" role="img" aria-label="' + lab + ': level ' + lv + ' of 3"></span>'; });
+    labels.forEach(function (lab) { h += '<span class="lab">' + lab + '</span>'; });
+    $(boxId).innerHTML = h;
+  }
+
+  /* ---------- Name it ---------- */
+  var ns = { cur: 0, t0: 0, locked: false, streak: 0, timer: null };
+  var keysName = $('keys-name');
+  FUNCS.forEach(function (f, i) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'key fnkey'; b.textContent = f.id; b.setAttribute('aria-label', f.word);
+    b.addEventListener('click', function () { nameAnswer(i, b); });
+    keysName.appendChild(b);
+  });
+  function namePaint() {
+    paintLevels('name-lv', nameDeck, FUNCS.map(function (f) { return f.id; }));
+    $('name-auto').textContent = nameDeck.auto();
+    $('name-streak').textContent = ns.streak;
+  }
+  function nameShow() {
+    clearTimeout(ns.timer);
+    ns.cur = nameDeck.next(); ns.locked = false;
+    $('name-stage').className = 'gstage';
+    $('name-graph').innerHTML = graphSVG(FUNCS[ns.cur].id, null, 'Graph to identify');
+    $('name-tag').textContent = 'Which function is this?';
+    $('name-next').hidden = true;
+    Array.prototype.forEach.call(keysName.querySelectorAll('.key'), function (b) { b.disabled = false; b.classList.remove('right', 'wrong'); });
+    namePaint();
+    ns.t0 = performance.now();
+  }
+  function nameAnswer(i, btn) {
+    if (ns.locked) return;
+    ns.locked = true;
+    var c = ns.cur, f = FUNCS[c], dt = performance.now() - ns.t0, ok = i === c, fb = $('name-fb'), s = (dt / 1000).toFixed(1);
+    var keys = keysName.querySelectorAll('.key');
+    Array.prototype.forEach.call(keys, function (b, k) { b.disabled = true; if (k === c) b.classList.add('right'); });
+    $('name-tag').textContent = 'y = ' + f.id + ' x';
+    nameDeck.mark(c, ok, dt);
+    if (ok) {
+      ns.streak++;
+      $('name-stage').className = 'gstage ok';
+      fb.className = 'feedback good';
+      fb.innerHTML = '<b>Right, ' + s + ' s.</b>' + (dt > 5000 ? ' Under 5 seconds is what counts as automatic.' : '');
+      ns.timer = setTimeout(nameShow, 900);
+    } else {
+      ns.streak = 0;
+      btn.classList.add('wrong');
+      $('name-stage').className = 'gstage no';
+      fb.className = 'feedback bad';
+      fb.innerHTML = '<b>Not ' + FUNCS[i].id + '. This is ' + f.id + ' x.</b> ' + Kit.esc(TELL[f.id]);
+      $('name-next').hidden = false; $('name-next').focus();
+    }
+    namePaint();
+    Kit.recAnswer('name_' + f.id, ok, dt);
+  }
+  $('name-next').addEventListener('click', function () { $('name-fb').className = 'feedback'; $('name-fb').textContent = ''; nameShow(); });
+
+  /* ---------- Facts ---------- */
+  var fs = { cur: 0, t0: 0, locked: false, streak: 0, timer: null };
+  var keysFacts = $('keys-facts');
+  function factGridBuild() {
+    var heads = ['per', 'range', 'at 0', 'zero', 'undef', '1 ÷ f'], h = '<tr><th class="fn"></th>';
+    heads.forEach(function (t) { h += '<th scope="col">' + t + '</th>'; });
+    h += '</tr>';
+    FUNCS.forEach(function (f, fi) {
+      h += '<tr><th class="fn" scope="row">' + f.id + '</th>';
+      FACTS.forEach(function (t, ti) { h += '<td><span class="lv" data-c="' + (fi * 6 + ti) + '"></span></td>'; });
+      h += '</tr>';
+    });
+    $('fact-grid').innerHTML = h;
+  }
+  function factPaint() {
+    Array.prototype.forEach.call($('fact-grid').querySelectorAll('.lv'), function (el) {
+      var c = +el.getAttribute('data-c'), lv = factDeck.levels[c];
+      el.className = 'lv' + (lv ? ' lv' + lv : '') + (c === fs.cur ? ' now' : '');
+      el.setAttribute('role', 'img');
+      el.setAttribute('aria-label', FUNCS[Math.floor(c / 6)].id + ' ' + FACTS[c % 6].short + ': level ' + lv + ' of 3');
+    });
+    $('fact-auto').textContent = factDeck.auto();
+    $('fact-streak').textContent = fs.streak;
+  }
+  function factShow() {
+    clearTimeout(fs.timer);
+    fs.cur = factDeck.next(); fs.locked = false;
+    var f = FUNCS[Math.floor(fs.cur / 6)], t = FACTS[fs.cur % 6], opts = factOptions(t.id);
+    $('fact-stage').className = 'stage';
+    $('fact-fn').innerHTML = fnMath(f.id);
+    $('fact-q').textContent = t.q;
+    $('fact-next').hidden = true;
+    keysFacts.innerHTML = '';
+    keysFacts.style.setProperty('--cols', t.id === 'recip' ? 3 : 2);
+    opts.forEach(function (o) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'key ' + (t.id === 'recip' ? 'fnkey' : 'word'); b.textContent = o.t; b.setAttribute('data-id', o.id);
+      b.addEventListener('click', function () { factAnswer1(o, b); });
+      keysFacts.appendChild(b);
+    });
+    factPaint();
+    fs.t0 = performance.now();
+  }
+  function factAnswer1(o, btn) {
+    if (fs.locked) return;
+    fs.locked = true;
+    var c = fs.cur, f = FUNCS[Math.floor(c / 6)], t = FACTS[c % 6], right = factAnswer(f.id, t.id);
+    var dt = performance.now() - fs.t0, ok = o.id === right, fb = $('fact-fb'), s = (dt / 1000).toFixed(1);
+    Array.prototype.forEach.call(keysFacts.querySelectorAll('.key'), function (b) { b.disabled = true; if (b.getAttribute('data-id') === right) b.classList.add('right'); });
+    factDeck.mark(c, ok, dt);
+    if (ok) {
+      fs.streak++;
+      $('fact-stage').className = 'stage ok';
+      fb.className = 'feedback good';
+      fb.innerHTML = '<b>Right, ' + s + ' s.</b>' + (dt > 5000 ? ' Under 5 seconds is what counts as automatic.' : '');
+      fs.timer = setTimeout(factShow, 900);
+    } else {
+      fs.streak = 0;
+      btn.classList.add('wrong');
+      $('fact-stage').className = 'stage no';
+      fb.className = 'feedback bad';
+      fb.innerHTML = '<b>Not "' + Kit.esc(o.t) + '".</b> ' + Kit.esc(factWhy(f.id, t.id));
+      $('fact-next').hidden = false; $('fact-next').focus();
+    }
+    factPaint();
+    Kit.recAnswer('fact_' + f.id + '_' + t.id, ok, dt);
+  }
+  $('fact-next').addEventListener('click', function () { $('fact-fb').className = 'feedback'; $('fact-fb').textContent = ''; factShow(); });
+
+  /* ---------- Plot it ---------- */
+  var ps = { fid: 'sin', picks: [null, null, null, null, null], done: false, res: null, sc: null };
+  var plotBox = $('plot-box');
+  function pcx(i) { return 40 + i * 70; }
+  function pcy(v) { return 125 - 65 * v; }
+  function plotSVG() {
+    var P = PLOTS[ps.fid], h = '', i, v, cx, pick, cls, lab;
+    h += '<svg viewBox="0 0 360 290" role="group" aria-label="Plotting grid for ' + ps.fid + ' x">';
+    h += '<defs><clipPath id="pclip"><rect x="22" y="30" width="316" height="190"></rect></clipPath></defs>';
+    h += '<rect class="g-bg" x="22" y="30" width="316" height="190"></rect>';
+    for (i = 0; i < 5; i++) h += '<line class="g-grid" x1="' + pcx(i) + '" y1="30" x2="' + pcx(i) + '" y2="220"></line>';
+    h += '<line class="g-one" x1="22" y1="60" x2="338" y2="60"></line><line class="g-one" x1="22" y1="190" x2="338" y2="190"></line>';
+    h += '<line class="g-axis" x1="22" y1="125" x2="338" y2="125"></line>';
+    cx = pcx(P.q.indexOf(0));
+    h += '<line class="g-axis" x1="' + cx + '" y1="30" x2="' + cx + '" y2="220"></line>';
+    h += '<text class="g-lab" x="11" y="64" text-anchor="middle">1</text><text class="g-lab" x="11" y="129" text-anchor="middle">0</text><text class="g-lab" x="11" y="194" text-anchor="middle">−1</text>';
+    if (ps.done) {
+      var x0 = P.q[0] * PI / 4, x1 = P.q[4] * PI / 4;
+      P.key.forEach(function (k, j) { if (k === 'A') h += '<line class="g-asym" x1="' + pcx(j) + '" y1="30" x2="' + pcx(j) + '" y2="220"></line>'; });
+      h += '<path class="g-curve" fill="none" clip-path="url(#pclip)" d="' + sampleSegs(ps.fid, x0, x1, 200, 4).map(function (seg) {
+        return 'M' + seg.map(function (p) { return (40 + (p[0] - x0) / (x1 - x0) * 280).toFixed(1) + ',' + pcy(p[1]).toFixed(1); }).join('L');
+      }).join('') + '"></path>';
+    }
+    for (i = 0; i < 5; i++) {
+      cx = pcx(i); pick = ps.picks[i]; lab = 'x = ' + piLabel(P.q[i]);
+      cls = ps.done ? (ps.res.cols[i] ? ' right' : ' wrong') : '';
+      for (v = 1; v >= -1; v--) h += '<circle class="p-dot" cx="' + cx + '" cy="' + pcy(v) + '" r="3.5"></circle>';
+      if (pick === 'A') h += '<line class="p-aline' + cls + '" x1="' + cx + '" y1="30" x2="' + cx + '" y2="220"></line>';
+      else if (pick !== null) h += '<circle class="p-pick' + cls + '" cx="' + cx + '" cy="' + pcy(pick) + '" r="9"></circle>';
+      if (ps.done) {
+        if (!ps.res.cols[i] && P.key[i] !== 'A') h += '<circle class="p-true" cx="' + cx + '" cy="' + pcy(P.key[i]) + '" r="12"></circle>';
+        h += '<text class="' + (ps.res.cols[i] ? 'p-ok' : 'p-no') + '" x="' + cx + '" y="22" text-anchor="middle">' + (ps.res.cols[i] ? '✓' : '✕') + '</text>';
+      } else {
+        for (v = 1; v >= -1; v--) {
+          h += '<circle class="p-hit" cx="' + cx + '" cy="' + pcy(v) + '" r="22" tabindex="0" role="button" data-col="' + i + '" data-val="' + v + '" aria-pressed="' + (pick === v) + '" aria-label="' + lab + ', y = ' + String(v).replace('-', '−') + '"></circle>';
+        }
+        h += '<g class="p-abtn' + (pick === 'A' ? ' sel' : '') + '" tabindex="0" role="button" data-col="' + i + '" data-val="A" aria-pressed="' + (pick === 'A') + '" aria-label="' + lab + ', asymptote">' +
+          '<rect x="' + (cx - 31) + '" y="240" width="62" height="44" rx="8"></rect>' +
+          '<line x1="' + cx + '" y1="246" x2="' + cx + '" y2="264"></line>' +
+          '<text x="' + cx + '" y="278" text-anchor="middle">asymptote</text></g>';
+      }
+      h += '<text class="g-lab" x="' + cx + '" y="234" text-anchor="middle">' + piLabel(P.q[i]) + '</text>';
+    }
+    return h + '</svg>';
+  }
+  function plotPaint(focus) {
+    plotBox.innerHTML = plotSVG();
+    var full = ps.picks.every(function (p) { return p !== null; });
+    $('plot-check').disabled = ps.done || !full;
+    $('plot-check').hidden = ps.done;
+    $('plot-clear').hidden = ps.done;
+    $('plot-next').hidden = !ps.done;
+    Array.prototype.forEach.call($('plot-seg').querySelectorAll('button'), function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-f') === ps.fid ? 'true' : 'false');
+      b.disabled = !!ps.sc;
+    });
+    paintLevels('plot-lv', plotDeck, PLOT_IDS);
+    $('plot-auto').textContent = plotDeck.auto();
+    $('sc-start').hidden = !!ps.sc;
+    if (focus) { var el = plotBox.querySelector('[data-col="' + focus[0] + '"][data-val="' + focus[1] + '"]'); if (el && el.focus) el.focus(); }
+  }
+  function plotLoad(fid) {
+    ps.fid = fid; ps.picks = [null, null, null, null, null]; ps.done = false; ps.res = null;
+    $('plot-stage').className = 'gstage';
+    var range = fid === 'tan' ? 'Plot tan x between −π/2 and π/2.' : 'Plot one period of ' + fid + ' x, from 0 to 2π.';
+    $('plot-task').textContent = (ps.sc ? 'Shape check, plot ' + (ps.sc.i + 1) + ' of 3. ' : '') + range + ' Tap one spot in each column: 1, 0 or −1. Use the asymptote button where the graph breaks.';
+    $('plot-fb').className = 'feedback'; $('plot-fb').textContent = '';
+    $('plot-next').textContent = 'Next plot';
+    plotPaint(null);
+  }
+  function plotTap(el) {
+    if (ps.done || !el) return;
+    var col = +el.getAttribute('data-col'), raw = el.getAttribute('data-val'), val = raw === 'A' ? 'A' : +raw;
+    ps.picks[col] = ps.picks[col] === val ? null : val;
+    plotPaint([col, raw]);
+  }
+  plotBox.addEventListener('click', function (e) { plotTap(e.target.closest ? e.target.closest('[data-col]') : null); });
+  plotBox.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var el = e.target.closest ? e.target.closest('[data-col]') : null;
+    if (el) { e.preventDefault(); plotTap(el); }
+  });
+  function scStatus() {
+    var last = Kit.load('sc.last', null), el = $('sc-status');
+    if (ps.sc) el.textContent = 'Shape check running: plot ' + (ps.sc.i + 1) + ' of 3.';
+    else if (last && typeof last.s === 'number' && typeof last.ms === 'number') el.textContent = 'Last shape check: ' + last.s + ' of 3 in ' + Kit.fmt(last.ms) + '.';
+    else el.textContent = 'No shape check yet on this device.';
+  }
+  function plotCheck() {
+    if (ps.done || ps.picks.some(function (p) { return p === null; })) return;
+    ps.res = gradePlot(ps.fid, ps.picks); ps.done = true;
+    var ok = ps.res.ok, fb = $('plot-fb');
+    plotDeck.mark(PLOT_IDS.indexOf(ps.fid), ok, 0);
+    $('plot-stage').className = 'gstage ' + (ok ? 'ok' : 'no');
+    fb.className = 'feedback ' + (ok ? 'good' : 'bad');
+    fb.innerHTML = ok ? '<b>Right.</b> That is the shape of ' + ps.fid + ' x. The curve is drawn through your points.'
+      : '<b>Not quite.</b> ' + Kit.esc(plotWhy(ps.fid, ps.res.cols));
+    Kit.recAnswer('plot_' + ps.fid, ok, 0);      /* plots are untimed: no time is recorded for them */
+    if (ps.sc) {
+      if (ok) ps.sc.score++;
+      if (ps.sc.i === 2) {
+        var ms = performance.now() - ps.sc.t0, score = ps.sc.score;
+        Kit.recTest(score, 3, ms, false);
+        Kit.save('sc.last', { s: score, ms: Math.round(ms) });
+        ps.sc = null;
+        fb.innerHTML += ' <b>Shape check: ' + score + ' of 3 in ' + Kit.fmt(ms) + '.</b>' + (score === 3 ? ' That is a pass.' : ' All three right is a pass. Try it again.');
+      } else {
+        $('plot-next').textContent = 'Next plot (' + (ps.sc.i + 2) + ' of 3)';
+      }
+    }
+    plotPaint(null);
+    if (ps.sc) $('plot-next').textContent = 'Next plot (' + (ps.sc.i + 2) + ' of 3)';
+    scStatus();
+    $('plot-next').focus();
+  }
+  $('plot-check').addEventListener('click', plotCheck);
+  $('plot-clear').addEventListener('click', function () { if (!ps.done) { ps.picks = [null, null, null, null, null]; plotPaint(null); } });
+  $('plot-next').addEventListener('click', function () {
+    if (ps.sc) { ps.sc.i++; plotLoad(ps.sc.order[ps.sc.i]); scStatus(); return; }
+    plotLoad(PLOT_IDS[plotDeck.next()]);
+  });
+  Array.prototype.forEach.call($('plot-seg').querySelectorAll('button'), function (b) {
+    b.addEventListener('click', function () { if (!ps.sc) plotLoad(b.getAttribute('data-f')); });
+  });
+  $('sc-start').addEventListener('click', function () {
+    ps.sc = { order: Kit.shuffle(PLOT_IDS), i: 0, score: 0, t0: performance.now() };
+    plotLoad(ps.sc.order[0]); scStatus();
+  });
+
+  /* ---------- All six ---------- */
+  var allBuilt = false;
+  function allBuild() {
+    var over = $('all-over').checked, h = '';
+    FUNCS.forEach(function (f) {
+      h += '<div class="panel gcard"><h3>' + fnMath(f.id) + '</h3>' +
+        graphSVG(f.id, over ? f.recip : null, 'Graph of ' + f.word + (over ? ' with ' + BY[f.recip].word + ' as a thin line' : '')) +
+        '<dl class="gfacts"><div><dt>Domain</dt><dd>' + DOMAIN_TEXT[f.asym] + '</dd></div>' +
+        '<div><dt>Range</dt><dd>' + RANGE_TEXT[f.range] + '</dd></div>' +
+        '<div><dt>Period</dt><dd>' + (f.period === 2 ? '2π' : 'π') + '</dd></div>' +
+        (over ? '<div><dt>Thin line</dt><dd>' + f.recip + ' x, which is 1 ÷ ' + f.id + ' x</dd></div>' : '') + '</dl></div>';
+    });
+    $('all-grid').innerHTML = h;
+    if (!allBuilt) {
+      $('all-tells').innerHTML = FUNCS.map(function (f) { return '<li>' + Kit.esc(TELL[f.id]) + '</li>'; }).join('');
+      allBuilt = true;
+    }
+  }
+  $('all-over').addEventListener('change', allBuild);
+
+  /* ---------- Shared hooks ---------- */
+  function onShow(v) {
+    var now = performance.now();
+    if (v === 'name' && !ns.locked) ns.t0 = now;
+    if (v === 'facts' && !fs.locked) fs.t0 = now;
+    if (v === 'all') allBuild();
+  }
+  /* Plots are untimed, so their rows say so instead of showing a time. */
+  function onReport() {
+    Array.prototype.forEach.call(document.querySelectorAll('#kit-report .itable tbody tr'), function (row) {
+      var c = row.cells;
+      if (c.length === 4 && /^Plot /.test(c[0].textContent) && !row.classList.contains('none')) c[2].textContent = 'untimed';
+    });
+  }
+  var resetArmed = null;
+  $('reset').addEventListener('click', function () {
+    var b = $('reset');
+    if (!resetArmed) {
+      b.textContent = 'Tap again to clear all levels';
+      resetArmed = setTimeout(function () { resetArmed = null; b.textContent = 'Reset all levels on this device'; }, 4000);
+      return;
+    }
+    clearTimeout(resetArmed); resetArmed = null; b.textContent = 'Reset all levels on this device';
+    nameDeck.reset(); factDeck.reset(); plotDeck.reset();
+    ns.streak = 0; fs.streak = 0;
+    $('name-fb').className = 'feedback'; $('name-fb').textContent = 'Levels cleared. The report keeps its history.';
+    nameShow(); factShow(); plotPaint(null);
+  });
+
+  /* ---------- Boot ---------- */
+  factGridBuild();
+  nameShow();
+  factShow();
+  plotLoad('sin');
+  scStatus();
+  Kit.digitKeys(function (view) { return view === 'name' ? keysName : (view === 'facts' ? keysFacts : null); });
+  Kit.start();
+})();
+</script>
+<p style="margin:0;padding:0 16px 40px;text-align:center;font:500 14px/1.4 Inter,system-ui,sans-serif"><a href="./" style="color:inherit;opacity:.72">All practice pages</a></p>
+</body>
+</html>

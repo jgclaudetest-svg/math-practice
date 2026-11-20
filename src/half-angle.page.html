@@ -1,0 +1,643 @@
+<title>Half-Angle Steps</title>
+<style>
+  /* Page layout: the problem sits on graph paper, a four-chip step bar under it, answer keys below.
+     The side column keeps "your work so far" so the solution builds up line by line. */
+  .given { font-size: 1.05rem; color: var(--muted); text-align: center; }
+  .stepbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .chip {
+    font-size: .7rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; text-align: center;
+    padding: 6px 2px; border-radius: 6px; border: 1.5px solid var(--line); color: var(--muted); background: var(--surface);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .chip.now { border-color: var(--accent); color: var(--ink); }
+  .chip.ok { background: var(--good-bg); border-color: var(--good); color: var(--good); }
+  .chip.no { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+  .ask { font-size: 1.05rem; font-weight: 500; min-height: 2.6em; }
+  .ask .stepno { color: var(--muted); font-weight: 400; }
+  .keypad.opts { --cols: 2; }
+  .keypad.opts .key { min-height: 68px; }
+  .keypad.opts .key.word { min-height: 50px; }
+  .mini { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin: 0 0 8px; font-family: var(--font-body); }
+  .trail { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .trail li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; align-items: center; font-size: .95rem; }
+  .trail .mk { font-size: .8rem; font-weight: 700; }
+  .trail .mk.ok { color: var(--good); }
+  .trail .mk.no { color: var(--bad); }
+  .trail .wait { color: var(--muted); font-size: .88rem; }
+  .solution h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; margin: 0 0 10px; }
+  .steps li { line-height: 2; }
+  .feedback math, .steps math, .trail math, .ask math, .prose math, .given math { font-size: 1.05em; }
+  .formula { font-size: 1.3rem; overflow-x: auto; padding: 12px 14px; }
+  .flist { display: flex; flex-direction: column; gap: 10px; max-width: 520px; }
+  .plain { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; max-width: 65ch; }
+  .plain li { line-height: 1.9; }
+  @media (max-width: 420px) {
+    .chip { font-size: .62rem; letter-spacing: .03em; }
+    .keypad.opts .key { font-size: 1rem; min-height: 62px; }
+    .formula { font-size: 1.1rem; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <h1>Half-Angle Steps</h1>
+    <p>Work each half-angle problem one step at a time: set it up, plug in, pick the sign, then simplify.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" id="tab-practice" data-view="practice" aria-selected="true">Practice</button>
+    <button class="tab" role="tab" id="tab-sprint" data-view="sprint" aria-selected="false">Sprint</button>
+    <button class="tab" role="tab" id="tab-formulas" data-view="formulas" aria-selected="false">Formulas</button>
+    <button class="tab" role="tab" id="tab-report" data-view="report" aria-selected="false">Report</button>
+  </nav>
+
+  <!-- Practice -->
+  <section id="view-practice" role="tabpanel" aria-labelledby="tab-practice">
+    <div class="work">
+      <div class="main">
+        <div class="stage" id="p-stage">
+          <div class="given" id="p-given"></div>
+          <div class="prompt" id="p-prompt"></div>
+          <div class="tag" id="p-tag"></div>
+        </div>
+        <div class="stepbar" id="p-bar"></div>
+        <div class="ask" id="p-ask" aria-live="polite"></div>
+        <div class="keypad opts" id="p-keys"></div>
+        <div class="feedback" id="p-fb" aria-live="polite"></div>
+        <button class="primary" id="p-next" hidden>Next step</button>
+        <div class="panel solution" id="p-sol" hidden>
+          <h2>Worked solution</h2>
+          <ol class="steps" id="p-sol-list"></ol>
+        </div>
+      </div>
+      <aside class="side" aria-label="Progress">
+        <div class="stats">
+          <div class="stat"><span class="n" id="p-done">0</span><span class="l">Solved</span></div>
+          <div class="stat"><span class="n" id="p-clean">0</span><span class="l">All four right</span></div>
+        </div>
+        <div class="panel">
+          <h2 class="mini">Your work so far</h2>
+          <ol class="trail" id="p-trail"></ol>
+        </div>
+        <div class="seg" id="p-seg" role="group" aria-label="Problem type"></div>
+        <p class="note">Each step is graded by itself. If you miss one, read why, then keep going. The Report tab shows which step trips you up most.</p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Sprint -->
+  <section id="view-sprint" role="tabpanel" aria-labelledby="tab-sprint" hidden>
+    <div class="work">
+      <div class="main">
+        <div class="stage" id="s-stage">
+          <div class="given" id="s-given"></div>
+          <div class="prompt" id="s-prompt"></div>
+          <div class="tag" id="s-tag"></div>
+        </div>
+        <div class="ask" id="s-ask">Work it on paper, then pick the exact answer.</div>
+        <div class="keypad opts" id="s-keys"></div>
+        <div class="feedback" id="s-fb" aria-live="polite"></div>
+        <button class="primary" id="s-next" hidden>Next problem</button>
+        <div class="panel solution" id="s-sol" hidden>
+          <h2>Worked solution</h2>
+          <ol class="steps" id="s-sol-list"></ol>
+        </div>
+      </div>
+      <aside class="side" aria-label="Progress">
+        <div class="stats">
+          <div class="stat"><span class="n" id="s-streak">0</span><span class="l">Streak</span></div>
+          <div class="stat"><span class="n"><span id="s-right">0</span><small>/<span id="s-total">0</span></small></span><span class="l">Right</span></div>
+        </div>
+        <div class="seg" id="s-seg" role="group" aria-label="Problem type"></div>
+        <p class="note">Same problems, answer only. Use this once the steps feel solid. A miss shows the full solution and comes back two problems later.</p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Formulas -->
+  <section id="view-formulas" role="tabpanel" aria-labelledby="tab-formulas" hidden>
+    <div class="prose" id="formulas"></div>
+  </section>
+
+  <section id="view-report" role="tabpanel" aria-labelledby="tab-report" hidden></section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /*PURE-START*/
+  var PI = Math.PI;
+  function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { var t = a % b; a = b; b = t; } return a || 1; }
+
+  /* MathML atoms, the same markup the kit's helpers produce. */
+  function mn(s) { return '<mn>' + s + '</mn>'; }
+  function mi(s) { return '<mi>' + s + '</mi>'; }
+  function mo(s) { return '<mo>' + s + '</mo>'; }
+  function mrow(s) { return '<mrow>' + s + '</mrow>'; }
+  function mfrac(a, b) { return '<mfrac><mrow>' + a + '</mrow><mrow>' + b + '</mrow></mfrac>'; }
+  function msqrt(a) { return '<msqrt>' + a + '</msqrt>'; }
+  var NEG = '<mo form="prefix">−</mo>', SP = '<mspace width="0.25em"></mspace>';
+
+  /* Exact values: every expression carries its MathML (m), plain text (t) and number (v). */
+  function ex(m, t, v) { return { m: m, t: t, v: v }; }
+  function signed(sg, m, t, v) { return sg < 0 ? ex(mrow(NEG + m), '−' + t, -v) : ex(m, t, v); }
+  function rat(p, q) {
+    var g = gcd(p, q); p /= g; q /= g;
+    var a = Math.abs(p);
+    return signed(p < 0 ? -1 : 1, q === 1 ? mn(a) : mfrac(mn(a), mn(q)), q === 1 ? String(a) : a + '/' + q, a / q);
+  }
+  function root(k, r) { return { m: (k === 1 ? '' : mn(k)) + msqrt(mn(r)), t: (k === 1 ? '' : k) + '√' + r }; }
+  /* a + b√r with whole numbers a and b. The positive term goes first when the signs differ. */
+  function lin(a, b, r) {
+    var terms = [], m = '', t = '';
+    if (a !== 0) terms.push({ s: a < 0 ? -1 : 1, m: mn(Math.abs(a)), t: String(Math.abs(a)) });
+    if (b !== 0) { var rt = root(Math.abs(b), r); terms.push({ s: b < 0 ? -1 : 1, m: rt.m, t: rt.t }); }
+    if (terms.length === 2 && terms[0].s < 0 && terms[1].s > 0) terms.reverse();
+    terms.forEach(function (x, i) {
+      if (i === 0) { m += (x.s < 0 ? NEG : '') + x.m; t += (x.s < 0 ? '−' : '') + x.t; }
+      else { m += mo(x.s < 0 ? '−' : '+') + x.m; t += (x.s < 0 ? ' − ' : ' + ') + x.t; }
+    });
+    return ex(m, t, a + b * Math.sqrt(r));
+  }
+  function linOver(sg, a, b, r, den) { var L = lin(a, b, r); return signed(sg, mfrac(L.m, mn(den)), '(' + L.t + ')/' + den, L.v / den); }
+  function rootLinOver(sg, a, b, r, den) { var L = lin(a, b, r); return signed(sg, mfrac(msqrt(L.m), mn(den)), '√(' + L.t + ')/' + den, Math.sqrt(L.v) / den); }
+  function rootOfLinOver(sg, a, b, r, den) { var L = lin(a, b, r); return signed(sg, msqrt(mfrac(L.m, mn(den))), '√((' + L.t + ')/' + den + ')', Math.sqrt(L.v / den)); }
+  /* sg·√(p/q), simplified, with no root left on the bottom. */
+  function sqrtRat(sg, p, q) {
+    var g = gcd(p, q); p /= g; q /= g;
+    var N = p * q, k = 1, i;
+    for (i = Math.floor(Math.sqrt(N)); i > 1; i--) if (N % (i * i) === 0) { k = i; break; }
+    var m = N / (k * k); g = gcd(k, q); k /= g; q /= g;
+    if (m === 1) { var R = rat(k, q); return signed(sg, R.m, R.t, R.v); }
+    var rt = root(k, m);
+    return signed(sg, q === 1 ? rt.m : mfrac(rt.m, mn(q)), q === 1 ? rt.t : rt.t + '/' + q, k * Math.sqrt(m) / q);
+  }
+  function isSquare(n) { var s = Math.round(Math.sqrt(n)); return s * s === n; }
+  /* n·π/d */
+  function ang(n, d) {
+    var g = gcd(n, d); n /= g; d /= g;
+    if (n === 0) return { n: 0, d: 1, v: 0, m: mn(0), t: '0', deg: 0 };
+    var top = (n === 1 ? '' : mn(n)) + mi('π');
+    return { n: n, d: d, v: n * PI / d, m: d === 1 ? top : mfrac(top, mn(d)), t: (n === 1 ? '' : n) + 'π' + (d === 1 ? '' : '/' + d), deg: 180 * n / d };
+  }
+  var QN = ['', 'I', 'II', 'III', 'IV'];
+  function quad(v) { return Math.floor(v / (PI / 2)) + 1; }
+  function fnVal(fn, x) { return fn === 'sin' ? Math.sin(x) : fn === 'cos' ? Math.cos(x) : Math.tan(x); }
+  var FNS = ['sin', 'cos', 'tan'];
+  var FN_CAP = { sin: 'Sine', cos: 'Cosine', tan: 'Tangent' }, FN_LOW = { sin: 'sine', cos: 'cosine', tan: 'tangent' };
+
+  var ITEMS = [
+    { key: 'a1', name: 'Find the angle A (exact value problems)', group: 'Step 1: set up' },
+    { key: 'b1', name: 'Pick the formula (given cos A problems)', group: 'Step 1: set up' },
+    { key: 'a2', name: 'cos A from the unit circle', group: 'Step 2: plug in' },
+    { key: 'b2', name: 'The number under the root', group: 'Step 2: plug in' },
+    { key: 'a3', name: 'Sign from the quadrant (exact value problems)', group: 'Step 3: sign' },
+    { key: 'b3', name: 'Sign from the quadrant (given cos A problems)', group: 'Step 3: sign' },
+    { key: 'a4', name: 'Final answer after the steps (exact value problems)', group: 'Step 4: final answer' },
+    { key: 'b4', name: 'Final answer after the steps (given cos A problems)', group: 'Step 4: final answer' },
+    { key: 'sa', name: 'Sprint answer (exact value problems)', group: 'Sprint: answer only' },
+    { key: 'sb', name: 'Sprint answer (given cos A problems)', group: 'Sprint: answer only' }
+  ];
+
+  /* The formulas, as shown and as numbers. */
+  function cosAM() { return mi('cos') + SP + mi('A'); }
+  function halfM(fn) { return mi(fn) + SP + mfrac(mi('A'), mn(2)); }
+  var FORM = {
+    sin: { m: mo('±') + msqrt(mfrac(mn(1) + mo('−') + cosAM(), mn(2))), t: '±√((1 − cos A)/2)', f: function (c) { return Math.sqrt((1 - c) / 2); } },
+    cos: { m: mo('±') + msqrt(mfrac(mn(1) + mo('+') + cosAM(), mn(2))), t: '±√((1 + cos A)/2)', f: function (c) { return Math.sqrt((1 + c) / 2); } },
+    tan: { m: mo('±') + msqrt(mfrac(mn(1) + mo('−') + cosAM(), mn(1) + mo('+') + cosAM())), t: '±√((1 − cos A)/(1 + cos A))', f: function (c) { return Math.sqrt((1 - c) / (1 + c)); } },
+    inv: { m: mo('±') + msqrt(mfrac(mn(1) + mo('+') + cosAM(), mn(1) + mo('−') + cosAM())), t: '±√((1 + cos A)/(1 − cos A))', f: function (c) { return Math.sqrt((1 + c) / (1 - c)); } }
+  };
+  var TAN_ALT = mfrac(mn(1) + mo('−') + cosAM(), mi('sin') + SP + mi('A'));
+
+  /* Step 3 is the same for both families: where does the half angle land, and what sign does the function get there? */
+  function signStep(p, item, ask, where) {
+    var all = [
+      { s: 'Quadrant I, so positive', t: 'quadrant I, positive', v: 11 },
+      { s: 'Quadrant II, so positive', t: 'quadrant II, positive', v: 21 },
+      { s: 'Quadrant II, so negative', t: 'quadrant II, negative', v: 20 }
+    ];
+    var code = p.q * 10 + (p.sg > 0 ? 1 : 0), right = null, wrong = [];
+    var rule = p.q === 1 ? 'Everything is positive there.' : FN_CAP[p.fn] + ' is ' + (p.sg > 0 ? 'positive' : 'negative') + ' there.';
+    all.forEach(function (o) {
+      if (o.v === code) { right = o; return; }
+      o.why = Math.floor(o.v / 10) !== p.q ? 'Check where the half angle lands.' : 'Right quadrant, wrong sign. In quadrant II only sine is positive.';
+      wrong.push(o);
+    });
+    return { item: item, ask: ask, right: right, wrong: wrong, show: 2, order: all,
+      explain: where + ' ' + rule + ' Take the ' + (p.sg > 0 ? '+' : '−') + ' root.',
+      fact: 'Quadrant ' + QN[p.q] + ', so the sign is ' + (p.sg > 0 ? '+' : '−') };
+  }
+
+  /* ---- Family a: exact values of sin, cos, tan at eighths and twelfths of π ---- */
+  var HALVES = [[1, 8], [3, 8], [5, 8], [7, 8], [1, 12], [5, 12], [7, 12], [11, 12]];
+  function buildA(fn, nd) {
+    var th = ang(nd[0], nd[1]), A = ang(2 * nd[0], nd[1]), q = quad(th.v);
+    var p = { id: 'a_' + fn + '_' + th.n + '_' + th.d, fam: 'a', fn: fn, th: th, A: A, r: th.d === 8 ? 2 : 3,
+      cs: Math.cos(A.v) > 0 ? 1 : -1, ss: Math.sin(A.v) > 0 ? 1 : -1, q: q, sg: (fn === 'sin' || q === 1) ? 1 : -1, half: th.v };
+    p.lhs = mi(fn) + SP + th.m;
+    p.lhsT = fn + ' ' + th.t;
+    p.given = '';
+    p.tag = th.deg + '°';
+    return p;
+  }
+  function stepsA(p) {
+    var th = p.th, A = p.A, r = p.r, fn = p.fn, cs = p.cs, ss = p.ss, sg = p.sg, out = [];
+    var TH = '[[' + th.m + ']]', AA = '[[' + A.m + ']]';
+
+    /* 1. Which angle is this half of? */
+    var w1 = [], halfTh = ang(th.n, th.d * 2);
+    w1.push({ m: halfTh.m, t: halfTh.t, v: halfTh.v, must: true, why: 'That is half of ' + TH + '. You want the angle that ' + TH + ' is half of, so double it.' });
+    (th.d === 8 ? [[1, 4], [3, 4], [5, 4], [7, 4]] : [[1, 6], [5, 6], [7, 6], [11, 6]]).forEach(function (nd) {
+      var a = ang(nd[0], nd[1]);
+      if (Math.abs(a.v - A.v) < 1e-9) return;
+      w1.push({ m: a.m, t: a.t, v: a.v, why: 'Double the angle. Two times ' + TH + ' does not give that.' });
+    });
+    out.push({ item: 'a1', ask: TH + ' is half of which angle A?', right: { m: A.m, t: A.t, v: A.v }, wrong: w1, show: 3,
+      explain: TH + ' is half of A, so double it: [[' + mi('A') + mo('=') + mn(2) + mo('×') + th.m + mo('=') + A.m + ']].',
+      fact: '[[' + mi('A') + mo('=') + A.m + ']]' });
+
+    /* 2. cos A from the unit circle */
+    var big = mfrac(msqrt(mn(r)), mn(2)), bigT = '√' + r + '/2', bigV = Math.sqrt(r) / 2;
+    var o2 = [signed(1, big, bigT, bigV), signed(-1, big, bigT, bigV), rat(1, 2), rat(-1, 2)];
+    var QA = quad(A.v), ref = r === 2 ? ang(1, 4) : ang(1, 6), right2 = null, wrong2 = [];
+    var cosA = signed(cs, big, bigT, bigV), cword = cs > 0 ? 'positive' : 'negative';
+    o2.forEach(function (o, i) {
+      if (Math.abs(o.v - cosA.v) < 1e-12) { right2 = o; return; }
+      o.why = i < 2 ? 'Right size, wrong sign. ' + AA + ' is in quadrant ' + QN[QA] + ', where cosine is ' + cword + '.'
+        : 'The reference angle is [[' + ref.m + ']], and its cosine is [[' + big + ']].';
+      wrong2.push(o);
+    });
+    var cosLine = '[[' + mi('cos') + SP + A.m + mo('=') + cosA.m + ']]';
+    out.push({ item: 'a2', ask: 'What is [[' + mi('cos') + SP + A.m + ']]?', right: right2, wrong: wrong2, show: 3, order: o2,
+      explain: QA === 1 ? AA + ' is a table angle: ' + cosLine + '.'
+        : AA + ' is in quadrant ' + QN[QA] + ', with reference angle [[' + ref.m + ']]. Cosine is ' + cword + ' in quadrant ' + QN[QA] + ', so ' + cosLine + '.',
+      fact: cosLine });
+
+    /* 3. Sign */
+    var lo = p.q === 1 ? ang(0, 1) : ang(1, 2), hi = p.q === 1 ? ang(1, 2) : ang(1, 1);
+    out.push(signStep(p, 'a3', 'Which quadrant is ' + TH + ' in, and what sign does ' + FN_LOW[fn] + ' get there?',
+      TH + ' is between [[' + lo.m + ']] and [[' + hi.m + ']], so it is in quadrant ' + QN[p.q] + '.'));
+
+    /* 4. Final answer */
+    var right, wrong, explain, pre = sg < 0 ? NEG : '';
+    if (fn === 'tan') {
+      var a = r === 2 ? -cs : 2, b = r === 2 ? 1 : -cs;            /* |tan| = a + b√r */
+      var a2 = r === 2 ? cs : 2, b2 = r === 2 ? 1 : cs;            /* 1 + cos on top instead */
+      var a3 = r === 2 ? 3 : 7, b3 = r === 2 ? -2 * cs : -4 * cs;  /* tan squared */
+      right = lin(sg * a, sg * b, r);
+      wrong = [
+        ex2(lin(-sg * a, -sg * b, r), true, 'Check the sign. ' + FN_CAP[fn] + ' is ' + (sg > 0 ? 'positive' : 'negative') + ' in quadrant ' + QN[p.q] + '.'),
+        ex2(lin(sg * a2, sg * b2, r), true, 'That is upside down. 1 − cos A goes on top.'),
+        ex2(lin(sg * a3, sg * b3, r), false, 'That is tan squared: (1 − cos A)/(1 + cos A) with no square root taken.'),
+        ex2(linOver(sg, 2, -cs, r, 2), false, 'That is only 1 − cos A. You still have to divide by sin A.')
+      ];
+      var sinA = r === 2 ? signed(ss, big, bigT, bigV) : rat(ss, 2);
+      var top = mn(1) + mo(cs > 0 ? '−' : '+') + big;
+      var lhs = mi('tan') + SP + th.m + mo('=');
+      explain = 'Use [[' + halfM('tan') + mo('=') + TAN_ALT + ']], which needs no ± sign. Here [[' + mi('sin') + SP + A.m + mo('=') + sinA.m + ']]. So [[' +
+        lhs + mfrac(top, sinA.m) + ']]. ' +
+        (r === 2
+          ? 'Multiply top and bottom by 2: [[' + (ss < 0 ? NEG : '') + mfrac(lin(2, -cs, 2).m, msqrt(mn(2))) + ']]. Divide each term by [[' + msqrt(mn(2)) + ']]: [[' + lhs + right.m + ']].'
+          : 'Multiply top and bottom by 2: [[' + lhs + right.m + ']].') +
+        ' The sign matches step 3.';
+    } else {
+      var e = fn === 'sin' ? -cs : cs;                              /* under the root: (2 + e√r)/4 */
+      right = rootLinOver(sg, 2, e, r, 2);
+      wrong = [
+        ex2(rootLinOver(-sg, 2, e, r, 2), true, 'Check the sign. ' + FN_CAP[fn] + ' is ' + (sg > 0 ? 'positive' : 'negative') + ' in quadrant ' + QN[p.q] + '.'),
+        ex2(rootLinOver(sg, 2, -e, r, 2), true, fn === 'sin' ? 'That is the cosine formula, with 1 + cos A. Sine uses 1 − cos A.' : 'That is the sine formula, with 1 − cos A. Cosine uses 1 + cos A.'),
+        ex2(linOver(sg, 2, e, r, 4), false, 'You stopped before the square root. That number is what goes under the root.'),
+        ex2(rootOfLinOver(sg, 2, e, r, 2), false, 'The 2 is missing. Divide by 2 under the root before you take it.')
+      ];
+      var inner = mn(1) + mo(e < 0 ? '−' : '+') + big, L = mi(fn) + SP + th.m + mo('=');
+      explain = 'Plug in: [[' + L + pre + msqrt(mfrac(inner, mn(2))) + ']]. ' +
+        (cs < 0 ? 'cos A is negative here, so 1 ' + (fn === 'sin' ? '−' : '+') + ' cos A becomes 1 ' + (fn === 'sin' ? '+' : '−') + ' [[' + big + ']]. ' : '') +
+        'Simplify inside the root: [[' + mfrac(inner, mn(2)) + mo('=') + mfrac(lin(2, e, r).m, mn(4)) + ']]. The root of 4 is 2, so [[' + L + right.m + ']].';
+    }
+    out.push({ item: 'a4', ask: 'Put it together. What is [[' + p.lhs + ']]?', right: right, wrong: wrong, show: 3, explain: explain,
+      fact: '[[' + p.lhs + mo('=') + right.m + ']]' });
+    return out;
+  }
+  function ex2(e, must, why) { e.must = must; e.why = why; return e; }
+
+  /* ---- Family b: given cos A and the quadrant of A ---- */
+  var GIVEN = [[7, 25], [-7, 25], [1, 8], [-1, 8], [3, 5], [-3, 5], [1, 9], [-1, 9]];
+  var RANGE = { 1: [[0, 1], [1, 2], [0, 1], [1, 4]], 2: [[1, 2], [1, 1], [1, 4], [1, 2]], 3: [[1, 1], [3, 2], [1, 2], [3, 4]], 4: [[3, 2], [2, 1], [3, 4], [1, 1]] };
+  function buildB(fn, nd, Q) {
+    var n = nd[0], d = nd[1], A = Q <= 2 ? Math.acos(n / d) : 2 * PI - Math.acos(n / d), q = quad(A / 2);
+    var p = { id: 'b_' + fn + '_' + (n < 0 ? 'm' : '') + Math.abs(n) + '_' + d + '_' + Q, fam: 'b', fn: fn, n: n, d: d, Q: Q, q: q,
+      sg: (fn === 'sin' || q === 1) ? 1 : -1, half: A / 2, c: rat(n, d) };
+    p.lhs = halfM(fn);
+    p.lhsT = fn + '(A/2)';
+    p.given = 'Given [[' + cosAM() + mo('=') + p.c.m + ']]';
+    p.tag = 'A in quadrant ' + QN[Q];
+    return p;
+  }
+  function stepsB(p) {
+    var fn = p.fn, n = p.n, d = p.d, sg = p.sg, out = [], c = p.c.v, an = Math.abs(n);
+    var HALF = '[[' + mfrac(mi('A'), mn(2)) + ']]', L = halfM(fn) + mo('=');
+
+    /* 1. Pick the formula */
+    var names = { sin: 'sin(A/2)', cos: 'cos(A/2)', tan: 'tan(A/2)', inv: 'tan(A/2) upside down' }, w1 = [];
+    ['sin', 'cos', 'tan', 'inv'].forEach(function (k) {
+      if (k === fn) return;
+      w1.push({ m: FORM[k].m, t: FORM[k].t, v: FORM[k].f(c), why: k === 'inv' ? 'That one is upside down. No half-angle formula has 1 − cos A on the bottom.' : 'That is the formula for ' + names[k] + '. You want ' + names[fn] + '.' });
+    });
+    out.push({ item: 'b1', ask: 'You know cos A. Which formula gives [[' + halfM(fn) + ']]?', right: { m: FORM[fn].m, t: FORM[fn].t, v: FORM[fn].f(c) }, wrong: w1, show: 3,
+      explain: 'You know cos A and want [[' + halfM(fn) + ']]. That is the half-angle formula for ' + FN_LOW[fn] + ': [[' + L + FORM[fn].m + ']].',
+      fact: 'Formula: [[' + FORM[fn].m + ']]' });
+
+    /* 2. The number under the root */
+    var minus = rat(d - n, d), plus = rat(d + n, d), cAbs = rat(an, d);
+    var one = function (op) { return mn(1) + mo(op) + (n < 0 ? mo('(') + p.c.m + mo(')') : p.c.m); };
+    var flip = function (op) { return n < 0 ? mo('=') + mn(1) + mo(op === '−' ? '+' : '−') + cAbs.m : ''; };
+    var right2, wrong2, explain2, under;
+    if (fn === 'tan') {
+      right2 = rat(d - n, d + n);
+      wrong2 = [
+        ex2(rat(d + n, d - n), false, 'That is upside down. 1 − cos A goes on top.'),
+        ex2(rat(d - n, 2 * d), false, 'That is the fraction for sine. Tangent divides by 1 + cos A, not by 2.'),
+        ex2(rat(d - n, d), false, 'That is only the top, 1 − cos A. Divide it by 1 + cos A.')
+      ];
+      under = mfrac(mn(1) + mo('−') + cosAM(), mn(1) + mo('+') + cosAM());
+      explain2 = 'Top: [[' + one('−') + flip('−') + mo('=') + minus.m + ']]. Bottom: [[' + one('+') + flip('+') + mo('=') + plus.m + ']]. Top divided by bottom: [[' +
+        mfrac(mn(d - n), mn(d + n)) + ((d - n) / gcd(d - n, d + n) !== d - n ? mo('=') + right2.m : '') + ']].';
+    } else {
+      var op = fn === 'sin' ? '−' : '+', num = fn === 'sin' ? d - n : d + n, oth = fn === 'sin' ? d + n : d - n;
+      right2 = rat(num, 2 * d);
+      wrong2 = [
+        ex2(rat(oth, 2 * d), false, fn === 'sin' ? 'That uses 1 + cos A. Sine uses 1 − cos A.' : 'That uses 1 − cos A. Cosine uses 1 + cos A.'),
+        ex2(rat(num, d), false, 'That is 1 ' + op + ' cos A. Do not forget to divide by 2.'),
+        ex2(rat(fn === 'sin' ? 2 * d - n : 2 * d + n, 2 * d), false, 'You halved only cos A. The 2 divides the whole top, 1 ' + op + ' cos A.')
+      ];
+      under = mfrac(mn(1) + mo(op) + cosAM(), mn(2));
+      explain2 = '[[' + one(op) + flip(op) + mo('=') + rat(num, d).m + ']]. Half of that is [[' + right2.m + ']].';
+    }
+    out.push({ item: 'b2', ask: 'Plug in [[' + cosAM() + mo('=') + p.c.m + ']]. What is [[' + under + ']]?', right: right2, wrong: wrong2, show: 3,
+      explain: explain2, fact: 'Under the root: [[' + right2.m + ']]' });
+
+    /* 3. Sign */
+    var R = RANGE[p.Q].map(function (x) { return '[[' + ang(x[0], x[1]).m + ']]'; });
+    out.push(signStep(p, 'b3', 'A is in quadrant ' + QN[p.Q] + '. Where does ' + HALF + ' land, and what sign does ' + FN_LOW[fn] + ' get there?',
+      'A is in quadrant ' + QN[p.Q] + ', so A is between ' + R[0] + ' and ' + R[1] + '. Halve both ends: ' + HALF + ' is between ' + R[2] + ' and ' + R[3] + '. That is quadrant ' + QN[p.q] + '.'));
+
+    /* 4. Final answer */
+    var P4 = fn === 'cos' ? d + n : d - n, Q4 = fn === 'tan' ? d + n : 2 * d, OP4 = fn === 'cos' ? d - n : d + n;
+    var right = sqrtRat(sg, P4, Q4), x = rat(P4, Q4);
+    var wrong = [
+      ex2(sqrtRat(-sg, P4, Q4), true, 'Check the sign. ' + FN_CAP[fn] + ' is ' + (sg > 0 ? 'positive' : 'negative') + ' in quadrant ' + QN[p.q] + '.'),
+      fn === 'tan' ? ex2(sqrtRat(sg, d + n, d - n), true, 'That is upside down. 1 − cos A goes on top.')
+        : ex2(sqrtRat(sg, OP4, 2 * d), true, fn === 'sin' ? 'That is the cosine formula, with 1 + cos A. Sine uses 1 − cos A.' : 'That is the sine formula, with 1 − cos A. Cosine uses 1 + cos A.'),
+      ex2(rat(sg * P4, Q4), false, 'You stopped before the square root. That number is what goes under the root.'),
+      fn === 'tan' ? ex2(sqrtRat(sg, d - n, 2 * d), false, 'That is sin(A/2). Tangent divides by 1 + cos A, not by 2.')
+        : ex2(sqrtRat(sg, P4, d), false, 'The 2 is missing. Divide by 2 under the root before you take it.')
+    ];
+    var cleared = isSquare(Q4 / gcd(P4, Q4)) ? '' : ' The last step clears the root from the bottom.';
+    out.push({ item: 'b4', ask: 'Put it together. What is [[' + halfM(fn) + ']]?', right: right, wrong: wrong, show: 3,
+      explain: 'Take the root with the sign from step 3: [[' + L + (sg < 0 ? NEG : '') + msqrt(x.m) + mo('=') + right.m + ']].' + cleared,
+      fact: '[[' + L + right.m + ']]' });
+    return out;
+  }
+
+  var PROBLEMS = [];
+  HALVES.forEach(function (nd) { FNS.forEach(function (fn) { PROBLEMS.push(buildA(fn, nd)); }); });
+  GIVEN.forEach(function (nd) { (nd[0] > 0 ? [1, 4] : [2, 3]).forEach(function (Q) { FNS.forEach(function (fn) { PROBLEMS.push(buildB(fn, nd, Q)); }); }); });
+  function steps(p) { return p.fam === 'a' ? stepsA(p) : stepsB(p); }
+  /*PURE-END*/
+
+  var $ = Kit.$;
+  function rich(s) { return s.replace(/\[\[(.*?)\]\]/g, function (_, m) { return Kit.math(m); }); }
+
+  Kit.init({
+    prefix: 'ha',
+    items: ITEMS,
+    slowMs: null,
+    planDays: 2,
+    planMinutes: 10,
+    idleCapMs: 90000,
+    dtCapMs: 120000
+  });
+
+  var FAM = Kit.load('fam', 'mix');
+  if (['mix', 'a', 'b'].indexOf(FAM) < 0) FAM = 'mix';
+  var decks = { p: Kit.deck({ id: 'practice', n: PROBLEMS.length, fastMs: null }), s: Kit.deck({ id: 'sprint', n: PROBLEMS.length, fastMs: null }) };
+  var turn = { p: Math.random() < 0.5 ? 'a' : 'b', s: Math.random() < 0.5 ? 'a' : 'b' };
+  function nextIndex(which) {
+    var fam = FAM;
+    if (fam === 'mix') { fam = turn[which]; turn[which] = fam === 'a' ? 'b' : 'a'; }
+    return decks[which].next(function (i) { return PROBLEMS[i].fam === fam; });
+  }
+
+  /* ---------- Shared rendering ---------- */
+  function showProblem(prefix, p, answerM) {
+    $(prefix + '-given').innerHTML = p.given ? rich(p.given) : '';
+    $(prefix + '-given').hidden = !p.given;
+    $(prefix + '-prompt').innerHTML = Kit.math(p.lhs + '<mo>=</mo>' + (answerM || '<mo>?</mo>'));
+    $(prefix + '-tag').textContent = p.tag;
+  }
+  function layOut(step) {
+    if (step.order) return step.order.slice();
+    var must = step.wrong.filter(function (w) { return w.must; });
+    var rest = Kit.shuffle(step.wrong.filter(function (w) { return !w.must; }));
+    return Kit.shuffle([step.right].concat(must.concat(rest).slice(0, step.show)));
+  }
+  function renderKeys(box, opts, onPick) {
+    box.innerHTML = '';
+    var words = !opts[0].m;
+    box.style.setProperty('--cols', words ? 1 : 2);
+    opts.forEach(function (o) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'key' + (words ? ' word' : '');
+      b.innerHTML = o.m ? Kit.math(o.m) : Kit.esc(o.s);
+      b.setAttribute('aria-label', o.t);
+      b._o = o;
+      b.addEventListener('click', function () { onPick(o, b); });
+      box.appendChild(b);
+    });
+  }
+  function lockKeys(box, right, pickedBtn, ok) {
+    Array.prototype.forEach.call(box.querySelectorAll('.key'), function (b) {
+      b.disabled = true;
+      if (b._o === right) b.classList.add('right');
+    });
+    if (!ok) pickedBtn.classList.add('wrong');
+  }
+  function showSolution(prefix, st) {
+    $(prefix + '-sol-list').innerHTML = st.map(function (s) { return '<li>' + rich(s.explain) + '</li>'; }).join('');
+    $(prefix + '-sol').hidden = false;
+  }
+  function buildSeg(id) {
+    var box = $(id), names = [['mix', 'Both kinds'], ['a', 'Exact values'], ['b', 'Given cos A']];
+    names.forEach(function (x) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.dataset.fam = x[0]; b.textContent = x[1];
+      b.addEventListener('click', function () {
+        if (FAM === x[0]) return;
+        FAM = x[0]; Kit.save('fam', FAM); paintSegs(); pNew(); sNew();
+      });
+      box.appendChild(b);
+    });
+  }
+  function paintSegs() {
+    Array.prototype.forEach.call(document.querySelectorAll('.seg button'), function (b) {
+      b.setAttribute('aria-pressed', b.dataset.fam === FAM ? 'true' : 'false');
+    });
+  }
+
+  /* ---------- Practice: four graded steps ---------- */
+  var CHIPS = ['Set up', 'Plug in', 'Sign', 'Answer'];
+  var ps = { idx: 0, p: null, st: null, i: 0, t0: 0, locked: false, clean: true, finished: false, timer: null, marks: [], done: 0, cleanCount: 0 };
+
+  function paintBar() {
+    var h = '';
+    CHIPS.forEach(function (name, i) {
+      var m = ps.marks[i], cls = m === true ? ' ok' : m === false ? ' no' : (i === ps.i && !ps.finished ? ' now' : '');
+      h += '<span class="chip' + cls + '">' + (m === true ? '✓ ' : m === false ? '✕ ' : (i + 1) + ' ') + name + '</span>';
+    });
+    $('p-bar').innerHTML = h;
+  }
+  function paintTrail() {
+    var h = '';
+    ps.st.forEach(function (s, i) {
+      var m = ps.marks[i];
+      if (m === undefined) return;
+      h += '<li><span class="mk ' + (m ? 'ok' : 'no') + '" aria-label="' + (m ? 'right' : 'missed') + '">' + (m ? '✓' : '✕') + '</span><span>' + rich(s.fact) + '</span></li>';
+    });
+    if (!h) h = '<li><span></span><span class="wait">Each finished step lands here.</span></li>';
+    $('p-trail').innerHTML = h;
+  }
+  function pNew() {
+    clearTimeout(ps.timer);
+    ps.idx = nextIndex('p'); ps.p = PROBLEMS[ps.idx]; ps.st = steps(ps.p);
+    ps.i = 0; ps.clean = true; ps.finished = false; ps.marks = [];
+    showProblem('p', ps.p, null);
+    $('p-stage').className = 'stage';
+    $('p-sol').hidden = true;
+    paintTrail();
+    pStep();
+  }
+  function pStep() {
+    var s = ps.st[ps.i];
+    ps.locked = false;
+    $('p-ask').innerHTML = '<span class="stepno">Step ' + (ps.i + 1) + ' of 4.</span> ' + rich(s.ask);
+    renderKeys($('p-keys'), layOut(s), pPick);
+    $('p-fb').className = 'feedback'; $('p-fb').innerHTML = '';
+    $('p-next').hidden = true;
+    paintBar();
+    ps.t0 = performance.now();
+  }
+  function pPick(o, btn) {
+    if (ps.locked) return;
+    ps.locked = true;
+    var s = ps.st[ps.i], ok = o === s.right, dt = performance.now() - ps.t0, last = ps.i === 3, fb = $('p-fb');
+    Kit.recAnswer(s.item, ok, dt);
+    lockKeys($('p-keys'), s.right, btn, ok);
+    ps.marks[ps.i] = ok;
+    if (!ok) ps.clean = false;
+    paintTrail();
+    if (ok) {
+      fb.className = 'feedback good';
+      fb.innerHTML = last ? '<b>Right.</b> That finishes the problem. The full solution is below.' : '<b>Right.</b>';
+    } else {
+      fb.className = 'feedback bad';
+      fb.innerHTML = '<b>Not quite.</b> ' + rich(o.why) + ' ' + (last ? 'The full solution is below.' : rich(s.explain));
+    }
+    if (last) {
+      ps.finished = true;
+      decks.p.mark(ps.idx, ps.clean, 0);
+      ps.done++; if (ps.clean) ps.cleanCount++;
+      $('p-done').textContent = ps.done; $('p-clean').textContent = ps.cleanCount;
+      showProblem('p', ps.p, s.right.m);
+      $('p-stage').className = 'stage ' + (ps.clean ? 'ok' : 'no');
+      showSolution('p', ps.st);
+      $('p-next').textContent = 'Next problem'; $('p-next').hidden = false; $('p-next').focus();
+      paintBar();
+    } else if (ok) {
+      paintBar();
+      ps.timer = setTimeout(function () { ps.i++; pStep(); }, 800);
+    } else {
+      paintBar();
+      $('p-next').textContent = 'Next step'; $('p-next').hidden = false; $('p-next').focus();
+    }
+  }
+  $('p-next').addEventListener('click', function () {
+    if (ps.finished) pNew(); else { ps.i++; pStep(); }
+  });
+
+  /* ---------- Sprint: answer only ---------- */
+  var ss = { idx: 0, p: null, st: null, t0: 0, locked: false, timer: null, streak: 0, right: 0, total: 0 };
+  function sNew() {
+    clearTimeout(ss.timer);
+    ss.idx = nextIndex('s'); ss.p = PROBLEMS[ss.idx]; ss.st = steps(ss.p); ss.locked = false;
+    showProblem('s', ss.p, null);
+    $('s-stage').className = 'stage';
+    renderKeys($('s-keys'), layOut(ss.st[3]), sPick);
+    $('s-next').hidden = true; $('s-sol').hidden = true;
+    ss.t0 = performance.now();
+  }
+  function sPick(o, btn) {
+    if (ss.locked) return;
+    ss.locked = true;
+    var s = ss.st[3], ok = o === s.right, dt = performance.now() - ss.t0, fb = $('s-fb');
+    Kit.recAnswer(ss.p.fam === 'a' ? 'sa' : 'sb', ok, dt);
+    decks.s.mark(ss.idx, ok, dt);
+    lockKeys($('s-keys'), s.right, btn, ok);
+    showProblem('s', ss.p, s.right.m);
+    ss.total++; if (ok) { ss.right++; ss.streak++; } else ss.streak = 0;
+    $('s-streak').textContent = ss.streak; $('s-right').textContent = ss.right; $('s-total').textContent = ss.total;
+    if (ok) {
+      $('s-stage').className = 'stage ok';
+      fb.className = 'feedback good'; fb.innerHTML = '<b>Right.</b>';
+      ss.timer = setTimeout(function () { fb.className = 'feedback'; fb.innerHTML = ''; sNew(); }, 900);
+    } else {
+      $('s-stage').className = 'stage no';
+      fb.className = 'feedback bad'; fb.innerHTML = '<b>Not quite.</b> ' + rich(o.why) + ' The full solution is below.';
+      showSolution('s', ss.st);
+      $('s-next').hidden = false; $('s-next').focus();
+    }
+  }
+  $('s-next').addEventListener('click', function () { $('s-fb').className = 'feedback'; $('s-fb').innerHTML = ''; sNew(); });
+
+  /* ---------- Formulas ---------- */
+  function buildFormulas() {
+    function byId(id) { for (var i = 0; i < PROBLEMS.length; i++) if (PROBLEMS[i].id === id) return PROBLEMS[i]; return PROBLEMS[0]; }
+    function worked(p, intro) {
+      return '<p>' + rich(intro) + '</p><ol class="steps">' + steps(p).map(function (s) { return '<li>' + rich(s.explain) + '</li>'; }).join('') + '</ol>';
+    }
+    var eq = '<mo>=</mo>', A2 = '[[' + mfrac(mi('A'), mn(2)) + ']]';
+    var exA = byId('a_cos_5_8'), exB = byId('b_cos_m7_25_3');
+    var h = '';
+    h += '<section><h2>The three formulas</h2><div class="flist">' +
+      '<div class="panel formula">' + Kit.math(halfM('sin') + eq + FORM.sin.m) + '</div>' +
+      '<div class="panel formula">' + Kit.math(halfM('cos') + eq + FORM.cos.m) + '</div>' +
+      '<div class="panel formula">' + Kit.math(halfM('tan') + eq + FORM.tan.m) + '</div></div>' +
+      '<p>Sine gets the minus. Cosine gets the plus. Tangent puts sine\'s top over cosine\'s top.</p>' +
+      '<p>All three need only one thing from you: cos A, where A is double the angle you were asked about.</p></section>';
+    h += '<section><h2>Picking the sign</h2>' +
+      '<p>The ± does not mean both. You pick one. Find the quadrant the half angle lands in, then use the sign your function has there.</p>' +
+      '<ul class="plain"><li>Quadrant I: sine, cosine and tangent are all positive.</li><li>Quadrant II: sine is positive. Cosine and tangent are negative.</li></ul>' +
+      '<p>When you are told the quadrant of A, halve its range to find where ' + rich(A2) + ' lands.</p><ul class="plain">';
+    [1, 2, 3, 4].forEach(function (Q) {
+      var R = RANGE[Q].map(function (x) { return rich('[[' + ang(x[0], x[1]).m + ']]'); });
+      h += '<li>A in quadrant ' + QN[Q] + ' is between ' + R[0] + ' and ' + R[1] + ', so ' + rich(A2) + ' is between ' + R[2] + ' and ' + R[3] + ': quadrant ' + (Q <= 2 ? 'I' : 'II') + '.</li>';
+    });
+    h += '</ul><p>Every problem on this page lands in quadrant I or II.</p></section>';
+    h += '<section><h2>Tangent without the ±</h2><div class="flist"><div class="panel formula">' +
+      Kit.math(halfM('tan') + eq + mfrac(mi('sin') + SP + mi('A'), mn(1) + mo('+') + cosAM()) + eq + TAN_ALT) + '</div></div>' +
+      '<p>These two versions give the sign by themselves. Use one when you know sin A, like on the exact value problems.</p></section>';
+    h += '<section><h2>Worked example: an exact value</h2>' + worked(exA, 'Find [[' + exA.lhs + ']]. That angle is ' + exA.tag + '.') + '</section>';
+    h += '<section><h2>Worked example: given cos A</h2>' + worked(exB, exB.given + ', with A in quadrant ' + QN[exB.Q] + '. Find [[' + exB.lhs + ']].') + '</section>';
+    $('formulas').innerHTML = h;
+  }
+
+  /* ---------- Boot ---------- */
+  buildSeg('p-seg'); buildSeg('s-seg'); paintSegs();
+  buildFormulas();
+  pNew();
+  sNew();
+  Kit.digitKeys(function (v) { return v === 'practice' ? $('p-keys') : v === 'sprint' ? $('s-keys') : null; });
+  Kit.start();
+})();
+</script>

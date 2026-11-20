@@ -1,0 +1,987 @@
+<title>Fraction Reps</title>
+<style>
+  /* Page layout: type picker, one problem on graph paper, four answer keys; skill map alongside. */
+  .two { --cols: 2; }
+  .seg button { min-height: 44px; }
+  .ask { font-size: .95rem; color: var(--muted); text-align: center; }
+  .stage .prompt { overflow-x: auto; overflow-y: hidden; padding: 6px 2px; }
+  .key { min-height: 74px; }
+  .key math { font-size: 1.12rem; }
+  .eq { overflow-x: auto; overflow-y: hidden; padding: 6px 0 2px; font-size: 1.12rem; }
+  .steps li > span { display: block; }
+  .sub { font-family: var(--font-display); font-weight: 700; font-size: 1rem; margin: 0; }
+  .skills { display: flex; flex-direction: column; gap: 10px; }
+  .skill { display: flex; flex-direction: column; gap: 4px; }
+  .skill .nm { font-size: .78rem; color: var(--muted); }
+  .sw { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+  .sw .lv { height: 16px; }
+  .intro { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+  .intro p { margin: 0; max-width: 60ch; }
+  .cbar { justify-content: space-between; }
+  .tally { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; font-variant-numeric: tabular-nums; max-width: 340px; }
+  .blockp { display: flex; flex-direction: column; gap: 10px; }
+  mfrac { math-style: normal; }   /* keep a fraction inside a fraction full size */
+  .miss .tag { align-self: flex-start; }
+  .blockp .ask { text-align: left; }
+  .miss .line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: .95rem; }
+  .miss .line .lab { color: var(--muted); font-size: .85rem; }
+  .miss .why { margin: 0; font-size: .95rem; }
+  details summary { cursor: pointer; color: var(--muted); font-size: .9rem; min-height: 44px; display: flex; align-items: center; }
+  .rule { font-weight: 500; }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <h1>Fraction Reps</h1>
+    <p>Fractions, square roots and rearranging are the small steps inside every trig problem. Practice them here until they stop slowing you down.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" id="tab-practice" data-view="practice" aria-selected="true">Practice</button>
+    <button class="tab" role="tab" id="tab-check" data-view="check" aria-selected="false">Mixed check</button>
+    <button class="tab" role="tab" id="tab-how-to" data-view="how-to" aria-selected="false">How to</button>
+    <button class="tab" role="tab" id="tab-report" data-view="report" aria-selected="false">Report</button>
+  </nav>
+
+  <section id="view-practice" role="tabpanel" aria-labelledby="tab-practice">
+    <div class="work">
+      <div class="main">
+        <div class="seg" id="types" role="group" aria-label="Problem type"></div>
+        <div class="stage" id="p-stage">
+          <span class="tag" id="p-tag"></span>
+          <div class="ask" id="p-ask"></div>
+          <div class="prompt small" id="p-prompt" aria-live="polite"></div>
+        </div>
+        <div class="feedback" id="p-feedback" aria-live="polite">Pick the answer in simplest form. Keys 1 to 4 work too.</div>
+        <div class="keypad two" id="p-keys"></div>
+        <div class="row">
+          <button class="primary" id="p-next" hidden>Next problem</button>
+          <button class="ghost" id="p-show" hidden>See the steps</button>
+        </div>
+        <div class="panel blockp" id="p-steps" hidden></div>
+      </div>
+      <aside class="side" aria-label="Progress">
+        <div class="stats">
+          <div class="stat"><span class="n"><span id="solid">0</span><small>/16</small></span><span class="l">Solid skills</span></div>
+          <div class="stat"><span class="n" id="streak">0</span><span class="l">Streak</span></div>
+        </div>
+        <div class="skills" id="skills"></div>
+        <div class="legend"><span>New</span><span class="lv"></span><span class="lv lv1"></span><span class="lv lv2"></span><span class="lv lv3"></span><span>Solid</span></div>
+        <p class="note">Each box is one kind of problem. It turns solid after three right answers in a row. A miss sends it back to new and brings that kind up again soon.</p>
+        <button class="link" id="reset">Reset this map</button>
+      </aside>
+    </div>
+  </section>
+
+  <section id="view-check" role="tabpanel" aria-labelledby="tab-check" hidden>
+    <div class="main">
+      <div class="panel intro" id="c-idle">
+        <p>This is the end-of-week check: 15 problems across all four types. You get no feedback until the end, and each tap is final.</p>
+        <p>The pass mark is 12 of 15. Work on paper if you like. Take your time and get them right.</p>
+        <button class="primary" id="c-start">Start the check</button>
+      </div>
+      <div class="main" id="c-run" hidden>
+        <div class="row cbar"><span class="clock" id="c-clock">0:00</span><span class="tag" id="c-count"></span></div>
+        <div class="stage" id="c-stage">
+          <div class="ask" id="c-ask"></div>
+          <div class="prompt small" id="c-prompt" aria-live="polite"></div>
+        </div>
+        <div class="keypad two" id="c-keys"></div>
+        <p class="note">No feedback until the end. Each tap is final.</p>
+      </div>
+      <div class="main" id="c-done" hidden>
+        <div id="c-result" class="main"></div>
+        <div class="row"><button class="primary" id="c-again">Start a new check</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-how-to" role="tabpanel" aria-labelledby="tab-how-to" hidden>
+    <div class="prose" id="howto"></div>
+  </section>
+
+  <section id="view-report" role="tabpanel" aria-labelledby="tab-report" hidden></section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /*PURE-START*/
+  var RNG = Math.random;
+  function setRng(f) { RNG = f; }
+  function ri(a, b) { return a + Math.floor(RNG() * (b - a + 1)); }
+  function pick(a) { return a[Math.floor(RNG() * a.length)]; }
+  function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { var t = a % b; a = b; b = t; } return a; }
+  function lcm(a, b) { return a / gcd(a, b) * b; }
+
+  /* MathML strings (same shapes as Kit.M) */
+  function mn(s) { return '<mn>' + s + '</mn>'; }
+  function mi(s) { return '<mi>' + s + '</mi>'; }
+  function mo(s) { return '<mo>' + s + '</mo>'; }
+  function mrow(a) { return '<mrow>' + a + '</mrow>'; }
+  function mfrac(a, b) { return '<mfrac><mrow>' + a + '</mrow><mrow>' + b + '</mrow></mfrac>'; }
+  function msqrt(a) { return '<msqrt>' + a + '</msqrt>'; }
+  function msup(a, b) { return '<msup><mrow>' + a + '</mrow><mrow>' + b + '</mrow></msup>'; }
+
+  /* Exact numbers: (c1√r1 + c2√r2 + ...) / d, always kept in simplest form. A whole number is a term with r = 1. */
+  function sqfree(n) { var k = 1, i; for (i = 2; i * i <= n; i++) while (n % (i * i) === 0) { n /= i * i; k *= i; } return [k, n]; }
+  function S(terms, d) {
+    var map = {}, rs = [], g;
+    terms.forEach(function (t) { if (!t[0]) return; var kr = sqfree(t[1]); map[kr[1]] = (map[kr[1]] || 0) + t[0] * kr[0]; });
+    Object.keys(map).forEach(function (r) { if (map[r] !== 0) rs.push(+r); });
+    rs.sort(function (a, b) { return a - b; });
+    if (!rs.length || !d) return { terms: [], d: 1 };
+    if (d < 0) { d = -d; rs.forEach(function (r) { map[r] = -map[r]; }); }
+    g = d; rs.forEach(function (r) { g = gcd(g, map[r]); });
+    return { terms: rs.map(function (r) { return [map[r] / g, r]; }), d: d / g };
+  }
+  function Q(p, q) { return S([[p, 1]], q); }
+  function sAdd(a, b) {
+    return S(a.terms.map(function (t) { return [t[0] * b.d, t[1]]; }).concat(b.terms.map(function (t) { return [t[0] * a.d, t[1]]; })), a.d * b.d);
+  }
+  function sNeg(a) { return S(a.terms.map(function (t) { return [-t[0], t[1]]; }), a.d); }
+  function sSub(a, b) { return sAdd(a, sNeg(b)); }
+  function sMul(a, b) {
+    var out = [];
+    a.terms.forEach(function (x) { b.terms.forEach(function (y) { out.push([x[0] * y[0], x[1] * y[1]]); }); });
+    return S(out, a.d * b.d);
+  }
+  function sInv(a) { var t = a.terms[0]; return S([[a.d, t[1]]], t[0] * t[1]); }      /* one-term numbers only */
+  function sDiv(a, b) { return sMul(a, sInv(b)); }
+  function sVal(a) { var v = 0; a.terms.forEach(function (t) { v += t[0] * Math.sqrt(t[1]); }); return v / a.d; }
+  function termM(c, r) { return r === 1 ? mn(c) : (c === 1 ? '' : mn(c)) + msqrt(mn(r)); }
+  function termT(c, r) { return r === 1 ? '' + c : (c === 1 ? '' : c) + '√' + r; }
+  function sOrder(a) {
+    return a.terms.filter(function (t) { return t[0] > 0; }).concat(a.terms.filter(function (t) { return t[0] < 0; }));
+  }
+  function sM(a) {
+    if (!a.terms.length) return mn(0);
+    var ts = sOrder(a), num = '';
+    ts.forEach(function (t, i) { num += (t[0] < 0 ? mo('−') : (i ? mo('+') : '')) + termM(Math.abs(t[0]), t[1]); });
+    if (a.d === 1) return num;
+    if (ts.length === 1) return (ts[0][0] < 0 ? mo('−') : '') + mfrac(termM(Math.abs(ts[0][0]), ts[0][1]), mn(a.d));
+    return mfrac(num, mn(a.d));
+  }
+  function sT(a) {
+    if (!a.terms.length) return '0';
+    var ts = sOrder(a), num = '';
+    ts.forEach(function (t, i) { num += (t[0] < 0 ? (i ? ' − ' : '−') : (i ? ' + ' : '')) + termT(Math.abs(t[0]), t[1]); });
+    if (a.d === 1) return num;
+    return (ts.length === 1 ? num : '(' + num + ')') + '/' + a.d;
+  }
+
+  /* Display expressions: { m: MathML, t: text, f(env): number } */
+  function mk(m, t, v) { return { m: m, t: t, f: typeof v === 'function' ? v : function () { return v; } }; }
+  function N(n) { return n < 0 ? mk(mo('−') + mn(-n), '−' + (-n), n) : mk(mn(n), '' + n, n); }
+  function Lt(name) { return mk(mi(name), name, function (env) { return env[name]; }); }
+  function F(a, b) { return mk(mfrac(a.m, b.m), '(' + a.t + ')/(' + b.t + ')', function (env) { return a.f(env) / b.f(env); }); }
+  function R(a) { return mk(msqrt(a.m), '√(' + a.t + ')', function (env) { return Math.sqrt(a.f(env)); }); }
+  var OPS = {
+    '+': function (x, y) { return x + y; }, '−': function (x, y) { return x - y; },
+    '·': function (x, y) { return x * y; }, '×': function (x, y) { return x * y; }, '÷': function (x, y) { return x / y; }
+  };
+  function OP(a, sym, b) {
+    var fn = OPS[sym];
+    return mk(a.m + mo(sym) + b.m, a.t + ' ' + sym + ' ' + b.t, function (env) { return fn(a.f(env), b.f(env)); });
+  }
+  function Pn(a) { return mk(mrow(mo('(') + a.m + mo(')')), '(' + a.t + ')', a.f); }
+  function J(a, b) { return mk(a.m + b.m, a.t + b.t, function (env) { return a.f(env) * b.f(env); }); }
+  function SQ(a) { return mk(msup(a.m, mn(2)), a.t + '²', function (env) { var v = a.f(env); return v * v; }); }
+  function PM(a) { var e = mk(mo('±') + a.m, '±' + a.t, a.f); e.pm = true; if (a.surd) e.surd = a.surd; return e; }
+  function T(c, r) { return mk(termM(c, r), termT(c, r), c * Math.sqrt(r)); }
+  function fr(a, b) { return F(N(a), N(b)); }
+  function sE(a) { var e = mk(sM(a), sT(a), sVal(a)); e.surd = a; return e; }
+  function rawS(a) { var t = a.terms[0]; return a.d === 1 ? T(t[0], t[1]) : F(T(t[0], t[1]), N(a.d)); }   /* one positive term */
+  function rootQ(a, b) { var g = gcd(a, b); a /= g; b /= g; return S([[1, a * b]], b); }                    /* √(a/b) */
+
+  var TYPES = [
+    { id: 'add', name: 'Add and subtract', short: 'Add / subtract' },
+    { id: 'mul', name: 'Multiply and divide', short: 'Multiply / divide' },
+    { id: 'root', name: 'Square roots', short: 'Roots' },
+    { id: 'solve', name: 'Rearranging', short: 'Rearrange' }
+  ];
+  var SUBS = [
+    { key: 'add_plain', type: 'add', name: 'Add fractions' },
+    { key: 'sub_plain', type: 'add', name: 'Subtract fractions' },
+    { key: 'add_whole', type: 'add', name: 'Whole number and a fraction' },
+    { key: 'add_roots', type: 'add', name: 'Add fractions with roots' },
+    { key: 'add_products', type: 'add', name: 'Multiply pairs, then add' },
+    { key: 'mul_plain', type: 'mul', name: 'Multiply fractions' },
+    { key: 'div_plain', type: 'mul', name: 'Divide fractions' },
+    { key: 'div_roots', type: 'mul', name: 'Fraction over a fraction, with roots' },
+    { key: 'over_whole', type: 'mul', name: 'Divide a whole top by a number' },
+    { key: 'root_simplify', type: 'root', name: 'Simplify a root' },
+    { key: 'root_split', type: 'root', name: 'Root of a fraction' },
+    { key: 'root_rationalize', type: 'root', name: 'Clear a root from the bottom' },
+    { key: 'solve_linear', type: 'solve', name: 'Solve ax + b = c' },
+    { key: 'solve_ratio', type: 'solve', name: 'Solve with x in a fraction' },
+    { key: 'formula_letter', type: 'solve', name: 'Rearrange a formula' },
+    { key: 'solve_square', type: 'solve', name: 'Solve for a squared letter' }
+  ];
+
+  /* Picks three wrong options that are numerically different from the answer and from each other. */
+  function mkEnv(p) {
+    var env = {}, k;
+    if (p.consts) for (k in p.consts) env[k] = p.consts[k];
+    (p.letters || []).forEach(function (n) {
+      var lo = p.range ? p.range[0] : 1.3, hi = p.range ? p.range[1] : 7.3;
+      env[n] = lo + RNG() * (hi - lo);
+    });
+    if (p.solveFor) env[p.solveFor] = p.answer.f(env);
+    return env;
+  }
+  function near(x, y) { return Math.abs(x - y) <= 1e-7 * Math.max(1, Math.abs(x), Math.abs(y)); }
+  function finish(p, cands) {
+    var envs = p.letters ? [mkEnv(p), mkEnv(p), mkEnv(p)] : [mkEnv(p)];
+    function vals(e) { return envs.map(function (env) { return e.f(env); }); }
+    function fin(x) { return isFinite(x); }
+    var seen = [vals(p.answer)], out = [], i, j, k, v, ok;
+    if (!seen[0].every(fin)) return null;
+    for (i = 0; i < cands.length && out.length < 3; i++) {
+      if (!cands[i]) continue;
+      v = vals(cands[i].e); ok = v.every(fin) && !v.some(function (x) { return Math.abs(x) < 1e-9; });   /* a 0 option gives itself away */
+      for (j = 0; ok && j < seen.length; j++) for (k = 0; k < v.length; k++) if (near(v[k], seen[j][k])) { ok = false; break; }
+      if (ok) { seen.push(v); out.push(cands[i]); }
+    }
+    if (out.length < 3) return null;
+    p.wrong = out;
+    return p;
+  }
+  function arith(ask, q, ans, steps, cands) { return finish({ ask: ask, q: q, prefix: '', answer: ans, steps: steps }, cands); }
+  function solve(v, letters, l, r, ans, steps, cands, extra) {
+    var p = { ask: 'Solve for ' + v + '.', eq: [l, r], solveFor: v, prefix: mi(v) + mo('='), answer: ans, steps: steps }, k;
+    if (letters) p.letters = letters;
+    if (extra) for (k in extra) p[k] = extra[k];
+    return finish(p, cands);
+  }
+  function properNum(b) { var a; do { a = ri(1, b - 1); } while (gcd(a, b) !== 1); return a; }
+
+  /* ---- 1. Add and subtract ---- */
+  function mkAddSub(a, b, c, d, minus) {
+    var Lc = lcm(b, d), ka = Lc / b, kc = Lc / d, sg = minus ? -1 : 1, sym = minus ? '−' : '+';
+    var top = a * ka + sg * c * kc, g = gcd(top, Lc), ans = sE(Q(top, Lc)), q = OP(fr(a, b), sym, fr(c, d));
+    var verb = minus ? 'Subtract' : 'Add', did = minus ? 'subtracted' : 'added';
+    var steps = [{ s: 'Find a common bottom. The smallest number that ' + b + ' and ' + d + ' both go into is ' + Lc + '. Scale each top to match.', parts: [q, OP(fr(a * ka, Lc), sym, fr(c * kc, Lc))] }];
+    if (g > 1) {
+      steps.push({ s: verb + ' the tops. Keep the bottom.', parts: [fr(top, Lc)] });
+      steps.push({ s: 'Reduce. Divide top and bottom by ' + g + '.', parts: [ans] });
+    } else steps.push({ s: verb + ' the tops. Keep the bottom.', parts: [ans] });
+    return arith(verb + '.', q, ans, steps, [
+      { e: sE(Q(a + sg * c, b + sg * d)), slip: 'You ' + did + ' the tops and the bottoms. Fractions need a common bottom first.' },
+      { e: sE(Q(a + sg * c, Lc)), slip: 'You found the common bottom, ' + Lc + ', but did not scale the tops to match.' },
+      { e: sE(Q(a + sg * c, b * d)), slip: 'You multiplied the bottoms but left the tops as they were. Each top has to be scaled too.' },
+      { e: sE(Q(a * ka - sg * c * kc, Lc)), slip: 'You ' + (minus ? 'added' : 'subtracted') + '. Check the sign between the fractions.' },
+      { e: sE(Q(a * c, b * d)), slip: 'You multiplied the fractions. This one is ' + (minus ? 'a subtraction' : 'an addition') + '.' }
+    ]);
+  }
+  var DENS = [2, 3, 4, 5, 6, 8, 9, 10, 12];
+  function gAddPlain(minus) {
+    var b = pick(DENS), d = pick(DENS), a, c, t;
+    if (b === d || lcm(b, d) > 60) return null;
+    a = properNum(b); c = properNum(d);
+    if (minus && a * d === c * b) return null;
+    if (minus && a * d < c * b) { t = a; a = c; c = t; t = b; b = d; d = t; }
+    return mkAddSub(a, b, c, d, minus);
+  }
+  function mkWhole(w, a, b, minus) {
+    var sg = minus ? -1 : 1, sym = minus ? '−' : '+', ans = sE(Q(w * b + sg * a, b)), q = OP(N(w), sym, fr(a, b));
+    var verb = minus ? 'Subtract' : 'Add', did = minus ? 'subtracted' : 'added';
+    return arith(verb + '.', q, ans, [
+      { s: 'Give ' + w + ' the same bottom. ' + w + ' is ' + (w * b) + '/' + b + '.', parts: [q, OP(fr(w * b, b), sym, fr(a, b))] },
+      { s: 'Now the bottoms match. ' + verb + ' the tops.', parts: [ans] }
+    ], [
+      { e: sE(Q(w + sg * a, b)), slip: 'You ' + did + ' the ' + w + ' straight onto the top. First write ' + w + ' as ' + (w * b) + '/' + b + '.' },
+      { e: sE(Q(w + sg * a, b + 1)), slip: 'You treated ' + w + ' as ' + w + '/1 and combined tops and bottoms. Fractions need a common bottom first.' },
+      { e: sE(Q(w * b - sg * a, b)), slip: 'You ' + (minus ? 'added' : 'subtracted') + '. Check the sign.' },
+      { e: sE(Q(w * a, b)), slip: 'You multiplied. This one is ' + (minus ? 'a subtraction' : 'an addition') + '.' },
+      { e: sE(Q(w * b + sg * a, b * b)), slip: 'You squared the bottom. When the bottoms match, the bottom stays the same.' }
+    ]);
+  }
+  function mkAddRoots(X, Y, minus) {
+    var cx = X.terms[0][0], rx = X.terms[0][1], dx = X.d, cy = Y.terms[0][0], ry = Y.terms[0][1], dy = Y.d;
+    var Lc = lcm(dx, dy), kx = Lc / dx, ky = Lc / dy, sg = minus ? -1 : 1, sym = minus ? '−' : '+';
+    var ans = sE(minus ? sSub(X, Y) : sAdd(X, Y)), q = OP(rawS(X), sym, rawS(Y)), steps = [], cands = [];
+    var verb = minus ? 'Subtract' : 'Add', inside = cx * kx * cx * kx * rx + sg * cy * ky * cy * ky * ry;
+    var last = (rx === ry ? 'The roots match, so they combine like x terms. ' + verb + ' the numbers in front.' :
+      'The bottoms match, so put both tops over ' + Lc + '. Unlike terms cannot merge into one.') + (ans.surd.d !== Lc ? ' Then reduce.' : '');
+    if (dx !== dy) {
+      steps.push({ s: 'Find a common bottom. The smallest number that ' + dx + ' and ' + dy + ' both go into is ' + Lc + '. Scale each top to match.', parts: [q, OP(F(T(cx * kx, rx), N(Lc)), sym, F(T(cy * ky, ry), N(Lc)))] });
+      steps.push({ s: last, parts: [ans] });
+      cands.push({ e: sE(S([[cx, rx], [sg * cy, ry]], dx + sg * dy)), slip: 'You combined the tops and the bottoms. Fractions need a common bottom first.' });
+      cands.push({ e: sE(S([[cx, rx], [sg * cy, ry]], Lc)), slip: 'You found the common bottom, ' + Lc + ', but did not scale the tops to match.' });
+    } else {
+      steps.push({ s: last, parts: [q, ans] });
+      cands.push({ e: sE(S([[cx, rx], [sg * cy, ry]], 2 * dx)), slip: 'You added the bottoms too. When the bottoms match, the bottom stays ' + dx + '.' });
+    }
+    if (inside > 0) cands.push({ e: sE(S([[1, inside]], Lc)), slip: rx === ry ?
+      'You combined the numbers under the roots. Matching roots combine like x terms: count how many you have.' :
+      'You merged two unlike terms under one root. They have to stay separate.' });
+    cands.push({ e: sE(minus ? sAdd(X, Y) : sSub(X, Y)), slip: 'Check the sign between the fractions.' });
+    cands.push({ e: sE(sMul(X, Y)), slip: 'You multiplied the fractions. This one is ' + (minus ? 'a subtraction' : 'an addition') + '.' });
+    return arith(verb + '.', q, ans, steps, cands);
+  }
+  function gAddRoots() {
+    var form = ri(0, 2), r = pick([2, 3, 5]), minus = RNG() < 0.4, X, Y, b, dx, dy;
+    if (form === 0) { b = pick([2, 3, 4]); X = S([[1, r]], b); Y = Q(b === 2 ? 1 : properNum(b), b); }
+    else if (form === 1) { dx = pick([2, 3, 4, 5, 6]); dy = pick([2, 3, 4, 5, 6]); if (dx === dy) return null; X = S([[properNum(dx), r]], dx); Y = S([[properNum(dy), r]], dy); }
+    else { dx = pick([2, 3]); dy = pick([2, 3, 4, 5, 6]); if (dx === dy) return null; X = S([[1, r]], dx); Y = Q(properNum(dy), dy); }
+    if (minus && sVal(X) <= sVal(Y)) minus = false;
+    return mkAddRoots(X, Y, minus);
+  }
+  /* Two products of trig-style values, then add or subtract: 1/2 · √2/2 + √3/2 · √2/2 */
+  function mkProducts(p1, q1, p2, q2, minus) {
+    var a1 = sqfree(p1.terms[0][1] * q1.terms[0][1]), a2 = sqfree(p2.terms[0][1] * q2.terms[0][1]);
+    var k1 = a1[0], R1 = a1[1], k2 = a2[0], R2 = a2[1], sg = minus ? -1 : 1, sym = minus ? '−' : '+';
+    var surd = S([[k1, R1], [sg * k2, R2]], 4), ans = sE(surd), cands = [], inside = k1 * k1 * R1 + sg * k2 * k2 * R2;
+    if (!surd.terms.length) return null;
+    var q = OP(OP(rawS(p1), '·', rawS(q1)), sym, OP(rawS(p2), '·', rawS(q2)));
+    var last = R1 === R2 ? 'The bottoms match. ' + (minus ? 'Subtract' : 'Add') + ' the tops' + (surd.d !== 4 ? ', then reduce.' : '.') :
+      'The bottoms match, so put both tops over 4. Unlike roots stay as separate terms.';
+    if (R1 !== R2 && inside > 0) cands.push({ e: sE(S([[1, inside]], 4)), slip: 'You merged the two tops under one root. Unlike roots have to stay separate.' });
+    cands.push({ e: sE(S([[k1, R1], [sg * k2, R2]], 8)), slip: 'You added the bottoms too. When the bottoms match, the bottom stays 4.' });
+    cands.push({ e: sE(S([[k1, R1], [-sg * k2, R2]], 4)), slip: 'Check the sign between the two products.' });
+    cands.push({ e: sE(S([[k1, R1], [sg * k2, R2]], 2)), slip: 'Bottom times bottom is 2 × 2 = 4. You left it as 2.' });
+    cands.push({ e: sE(S([[k1, R1], [sg * k2, R2]], 16)), slip: 'You multiplied the bottoms again when combining. Once the bottoms match, the bottom stays 4.' });
+    return arith('Work it out.', q, ans, [
+      { s: 'Multiply each pair straight across: top times top, bottom times bottom.', parts: [q, OP(F(T(k1, R1), N(4)), sym, F(T(k2, R2), N(4)))] },
+      { s: last, parts: [ans] }
+    ], cands);
+  }
+  var SINV = { 30: Q(1, 2), 45: S([[1, 2]], 2), 60: S([[1, 3]], 2) }, COSV = { 30: SINV[60], 45: SINV[45], 60: SINV[30] };
+  function gAddProducts() {
+    var A = pick([30, 45, 60]), B = pick([30, 45, 60]), plus = RNG() < 0.5;
+    if (A === B) return null;
+    if (RNG() < 0.5) return mkProducts(SINV[A], COSV[B], COSV[A], SINV[B], !plus);       /* sin(A ± B) */
+    return mkProducts(COSV[A], COSV[B], SINV[A], SINV[B], plus);                         /* cos(A ± B) */
+  }
+
+  /* ---- 2. Multiply and divide ---- */
+  function mkMul(a, b, c, d) {
+    var g = gcd(a * c, b * d), ans = sE(Q(a * c, b * d)), q = OP(fr(a, b), '×', fr(c, d)), Lc = lcm(b, d);
+    var steps = [{ s: 'Multiply straight across: top times top, bottom times bottom.', parts: [q, g > 1 ? fr(a * c, b * d) : ans] }];
+    if (g > 1) steps.push({ s: 'Reduce. Divide top and bottom by ' + g + '.', parts: [ans] });
+    return arith('Multiply.', q, ans, steps, [
+      { e: sE(Q(a * d, b * c)), slip: 'You cross-multiplied. That move is for dividing. To multiply, go straight across.' },
+      { e: sE(Q(a * c, b + d)), slip: 'You multiplied the tops but added the bottoms. Multiply the bottoms too.' },
+      { e: sE(Q(a * d + c * b, b * d)), slip: 'You added the fractions. This one is a multiplication.' },
+      { e: sE(Q(a * c, Lc)), slip: 'You used a common bottom. Multiplying does not need one: just multiply the bottoms.' },
+      { e: sE(Q(a + c, b * d)), slip: 'You added the tops. Multiply the tops and multiply the bottoms.' }
+    ]);
+  }
+  function gMul() {
+    var b = pick([2, 3, 4, 5, 6, 8, 9, 10]), d = pick([2, 3, 4, 5, 6, 8, 9, 10]);
+    return mkMul(properNum(b), b, properNum(d), d);
+  }
+  function mkDiv(a, b, c, d) {
+    var g = gcd(a * d, b * c), ans = sE(Q(a * d, b * c)), q = OP(fr(a, b), '÷', fr(c, d));
+    var steps = [
+      { s: 'Dividing by a fraction is the same as multiplying by its flip. Flip the second fraction.', parts: [q, OP(fr(a, b), '×', c === 1 ? N(d) : fr(d, c))] },
+      { s: 'Multiply straight across.', parts: [g > 1 ? fr(a * d, b * c) : ans] }
+    ];
+    if (g > 1) steps.push({ s: 'Reduce. Divide top and bottom by ' + g + '.', parts: [ans] });
+    return arith('Divide.', q, ans, steps, [
+      { e: sE(Q(b * c, a * d)), slip: 'You flipped the first fraction. Flip the second one, the one you are dividing by.' },
+      { e: sE(Q(a * c, b * d)), slip: 'You multiplied without flipping. Flip the second fraction first.' },
+      { e: sE(Q(b * d, a * c)), slip: 'You flipped both fractions. Flip only the second.' },
+      { e: sE(Q(a * d - c * b, b * d)), slip: 'You subtracted. This one is a division.' },
+      { e: sE(Q(a * d, b + c)), slip: 'You added on the bottom. After flipping, multiply straight across.' }
+    ]);
+  }
+  function gDiv() {
+    var b = pick([2, 3, 4, 5, 6, 8, 9]), d = pick([2, 3, 4, 5, 6, 8, 9]), a = properNum(b), c = properNum(d);
+    if (a * d === b * c) return null;
+    return mkDiv(a, b, c, d);
+  }
+  function mkDivRoots(X, Y, over) {
+    var cx = X.terms[0][0], rx = X.terms[0][1], dx = X.d, cy = Y.terms[0][0], ry = Y.terms[0][1], dy = Y.d;
+    var n = cx * dy, m = dx * cy, g = gcd(n, m), ans = sE(sDiv(X, Y)), which = over ? 'bottom' : 'second';
+    var q = over ? F(rawS(X), rawS(Y)) : OP(rawS(X), '÷', rawS(Y)), flip = (cy === 1 && ry === 1) ? N(dy) : F(N(dy), T(cy, ry));
+    var across = 'Multiply straight across' + (g > 1 ? ' and cancel the ' + g + 's.' : '.'), steps, cands;
+    n /= g; m /= g;
+    steps = [{ s: 'Dividing by a fraction is the same as multiplying by its flip. Flip the ' + which + ' fraction.', parts: [q, OP(rawS(X), '·', flip)] }];
+    if (ry === 1) steps.push({ s: across, parts: [ans] });
+    else {
+      steps.push({ s: across, parts: [F(T(n, rx), T(m, ry))] });
+      steps.push({ s: rx === ry ? 'The √' + ry + ' on top and the √' + ry + ' on the bottom cancel.' :
+        'A root cannot stay on the bottom. Multiply top and bottom by √' + ry + (ans.surd.d !== m * ry ? ', then reduce.' : '.'), parts: [ans] });
+    }
+    cands = [
+      { e: sE(sDiv(Y, X)), slip: 'You flipped the wrong fraction. Flip the one you are dividing by.' },
+      { e: sE(sMul(X, Y)), slip: 'You multiplied without flipping. Dividing by a fraction means multiplying by its flip.' }
+    ];
+    if (ry > 1 && rx !== ry) {
+      cands.push({ e: sE(S([[n, rx]], m * ry)), slip: 'You swapped √' + ry + ' for ' + ry + ' on the bottom and left the top alone. Multiply top and bottom by √' + ry + '.' });
+      cands.push({ e: sE(S([[n, rx * ry]], m)), slip: 'You multiplied the top by √' + ry + ' and dropped the bottom. The bottom becomes √' + ry + ' · √' + ry + ' = ' + ry + '.' });
+    }
+    cands.push({ e: sE(sMul(ans.surd, Q(1, 2))), slip: 'Check the cancelling. You ended with an extra 2 on the bottom.' });
+    cands.push({ e: sE(sMul(ans.surd, Q(2, 1))), slip: 'Check the cancelling. You ended with an extra 2 on top.' });
+    return arith(over ? 'Simplify.' : 'Divide.', q, ans, steps, cands);
+  }
+  var DRX = [Q(1, 1), Q(1, 2), S([[1, 2]], 2), S([[1, 3]], 2), Q(1, 3), Q(2, 3), S([[1, 3]], 3)];
+  var DRY = [Q(1, 2), S([[1, 2]], 2), S([[1, 3]], 2), Q(2, 3), Q(3, 4), S([[1, 3]], 3), S([[1, 2]], 3)];
+  function gDivRoots() {
+    var X = pick(DRX), Y = pick(DRY);
+    if (near(sVal(X), sVal(Y))) return null;
+    if (X.terms[0][1] === 1 && Y.terms[0][1] === 1 && RNG() < 0.7) return null;    /* mostly keep a root in play */
+    return mkDivRoots(X, Y, RNG() < 0.6);
+  }
+  function mkOverWhole(X, minus, k) {
+    var cx = X.terms[0][0], rx = X.terms[0][1], dx = X.d, sg = minus ? -1 : 1, sym = minus ? '−' : '+';
+    var topS = sAdd(Q(1, 1), sMul(X, Q(sg, 1))), ans = sE(sMul(topS, Q(1, k))), q = F(OP(N(1), sym, rawS(X)), N(k));
+    return arith('Simplify.', q, ans, [
+      { s: 'Make the top one fraction. Write 1 as ' + dx + '/' + dx + '.', parts: [q, F(sE(topS), N(k))] },
+      { s: 'Dividing by ' + k + ' multiplies the bottom by ' + k + '.' + (ans.surd.d !== topS.d * k ? ' Then reduce.' : ''), parts: [ans] }
+    ], [
+      { e: sE(S([[1, 1], [sg * cx, rx]], dx * k)), slip: 'You left the 1 as 1 when you put the top over ' + dx + '. 1 is ' + dx + '/' + dx + '.' },
+      { e: sE(sAdd(Q(1, 1), sMul(X, Q(sg, k)))), slip: 'You divided only the fraction by ' + k + '. The whole top gets divided.' },
+      { e: sE(sMul(topS, Q(k, 1))), slip: dx === k ? 'You cancelled the ' + dx + ' inside the top against the ' + k + ' below. They do not cancel. The bottom becomes ' + dx + ' × ' + k + ' = ' + (dx * k) + '.' : 'You multiplied by ' + k + ' instead of dividing by ' + k + '.' },
+      { e: sE(sAdd(Q(1, k), sMul(X, Q(sg, 1)))), slip: 'You divided only the 1 by ' + k + '. Both parts of the top get divided.' },
+      { e: sE(sMul(sAdd(Q(1, 1), sMul(X, Q(-sg, 1))), Q(1, k))), slip: 'Check the sign in the top.' }
+    ]);
+  }
+  var OWX = [Q(1, 2), S([[1, 2]], 2), S([[1, 3]], 2), S([[1, 2]], 2), S([[1, 3]], 2), Q(1, 3), Q(2, 3), Q(1, 4), Q(3, 4), Q(3, 5), Q(7, 25)];
+  function gOverWhole() { return mkOverWhole(pick(OWX), RNG() < 0.6, RNG() < 0.7 ? 2 : pick([3, 4])); }
+
+  /* ---- 3. Square roots ---- */
+  function mkRootSimplify(k, r) {
+    var n = k * k * r, q = R(N(n)), ans = sE(S([[1, n]], 1));
+    return arith('Simplify.', q, ans, [
+      { s: 'Find the biggest square number that divides ' + n + '. Here ' + n + ' = ' + (k * k) + ' × ' + r + '.', parts: [q, OP(R(N(k * k)), '·', R(N(r)))] },
+      { s: '√' + (k * k) + ' = ' + k + ', so ' + k + ' comes out front.', parts: [ans] }
+    ], [
+      { e: sE(S([[k * k, r]], 1)), slip: 'You pulled out the square itself. √' + (k * k) + ' comes out as ' + k + ', not ' + (k * k) + '.' },
+      { e: sE(S([[1, r]], 1)), slip: 'You divided by ' + (k * k) + ' but brought nothing out front. √' + (k * k) + ' = ' + k + ' goes in front.' },
+      { e: sE(Q(k * r, 1)), slip: 'You lost the root on the ' + r + '. Only the square comes out. The ' + r + ' stays under the root.' },
+      { e: sE(S([[r, k]], 1)), slip: 'You pulled out the wrong factor. Only square numbers come out of a root.' },
+      { e: sE(Q(n, 2)), slip: 'You halved the number. A square root is not a half.' }
+    ]);
+  }
+  function gRootSimplify() {
+    var k = pick([2, 2, 3, 3, 4, 5, 6]), r = pick([2, 3, 5, 6, 7]);
+    return k * k * r > 200 ? null : mkRootSimplify(k, r);
+  }
+  function mkRootSplit(a, qq) {
+    var b = qq * qq, q = R(fr(a, b)), ans = sE(S([[1, a]], qq)), sf = sqfree(a);
+    return arith('Simplify.', q, ans, [
+      { s: 'The root of a fraction is the root of the top over the root of the bottom.', parts: [q, F(R(N(a)), R(N(b)))] },
+      { s: '√' + b + ' = ' + qq + (sf[0] > 1 ? ', and √' + a + ' = ' + sf[0] + '√' + sf[1] + '.' : '.'), parts: [ans] }
+    ], [
+      { e: sE(Q(a, qq)), slip: 'You took the root of the bottom only. The top needs its root too.' },
+      { e: sE(S([[1, a]], b)), slip: 'You took the root of the top only. The bottom needs its root too: √' + b + ' = ' + qq + '.' },
+      { e: sE(Q(a, 2 * b)), slip: 'You halved the fraction. A square root is not a half.' },
+      { e: sE(S([[1, a]], 2 * qq)), slip: 'Check the bottom. √' + b + ' = ' + qq + '.' }
+    ]);
+  }
+  function gRootSplit() {
+    var qq = pick([2, 3, 4, 5]), a = pick([2, 3, 5, 6, 7, 8, 10, 11, 12, 13]);
+    return gcd(a, qq) !== 1 ? null : mkRootSplit(a, qq);
+  }
+  function mkRationalize(c, r) {
+    var g = gcd(c, r), q = F(N(c), R(N(r))), ans = sE(S([[c, r]], r));
+    var steps = [
+      { s: 'Multiply top and bottom by √' + r + '. That is multiplying by 1, so the value does not change.', parts: [q, F(OP(N(c), '·', R(N(r))), OP(R(N(r)), '·', R(N(r))))] },
+      { s: 'On the bottom, √' + r + ' · √' + r + ' = ' + r + '.', parts: [g > 1 ? F(T(c, r), N(r)) : ans] }
+    ];
+    if (g > 1) steps.push({ s: 'Reduce. Divide top and bottom by ' + g + '.', parts: [ans] });
+    return arith('Clear the root from the bottom.', q, ans, steps, [
+      { e: sE(Q(c, r)), slip: 'You changed √' + r + ' to ' + r + ' on the bottom and left the top alone. Multiply top and bottom by √' + r + '.' },
+      { e: sE(S([[c, r]], 1)), slip: 'You moved the root to the top and dropped the bottom. The bottom becomes √' + r + ' · √' + r + ' = ' + r + '.' },
+      { e: sE(S([[c, r]], r * r)), slip: 'On the bottom, √' + r + ' · √' + r + ' = ' + r + ', not ' + (r * r) + '.' },
+      { e: sE(Q(c * c, r)), slip: 'You squared the fraction. Squaring changes its value.' }
+    ]);
+  }
+  function gRationalize() { var r = pick([2, 3, 5, 6, 7, 10]); return mkRationalize(RNG() < 0.3 ? r : ri(1, 6), r); }
+
+  /* ---- 4. Rearranging ---- */
+  function mkSolveLinear(a, b, c, minus) {
+    var x = Lt('x'), sym = minus ? '−' : '+', num = minus ? c + b : c - b, alt = minus ? c - b : c + b, ans = sE(Q(num, a));
+    return solve('x', null, OP(J(N(a), x), sym, N(b)), N(c), ans, [
+      { s: minus ? 'Undo the − ' + b + '. Add ' + b + ' to both sides.' : 'Undo the + ' + b + '. Subtract ' + b + ' from both sides.', parts: [J(N(a), x), N(num)] },
+      { s: 'x is multiplied by ' + a + '. Divide both sides by ' + a + '.', parts: [x, ans] }
+    ], [
+      { e: sE(Q(alt, a)), slip: 'You moved the ' + b + ' across the wrong way. ' + (minus ? 'Add ' + b + ' to' : 'Subtract ' + b + ' from') + ' both sides.' },
+      { e: sE(sAdd(Q(c, a), Q(minus ? b : -b, 1))), slip: 'You divided ' + c + ' by ' + a + ' and left the ' + b + ' whole. Undo the ' + b + ' first.' },
+      { e: sE(Q(num * a, 1)), slip: 'You multiplied by ' + a + '. The ' + a + ' is multiplying x, so divide.' },
+      { e: sE(Q(a, num)), slip: 'You flipped the last step. x = ' + num + ' ÷ ' + a + '.' }
+    ]);
+  }
+  function gSolveLinear() {
+    var a = ri(2, 9), b = ri(1, 12), minus = RNG() < 0.4, num;
+    if (RNG() < 0.5) num = a * ri(1, 6); else { do { num = ri(1, 3 * a); } while (num % a === 0); }
+    if (minus && num - b < 1) minus = false;
+    return mkSolveLinear(a, b, minus ? num - b : num + b, minus);
+  }
+  function mkSolveRatio(form, a, b, c) {
+    var x = Lt('x'), ans;
+    if (form === 0) {
+      ans = sE(Q(a, b));
+      return solve('x', null, F(N(a), x), N(b), ans, [
+        { s: 'x is on the bottom. Multiply both sides by x.', parts: [N(a), J(N(b), x)] },
+        { s: 'Divide both sides by ' + b + '.', parts: [x, ans] }
+      ], [
+        { e: sE(Q(a * b, 1)), slip: 'You multiplied ' + a + ' and ' + b + '. x ends up as ' + a + ' ÷ ' + b + '.' },
+        { e: sE(Q(b, a)), slip: 'You flipped it. x = ' + a + ' ÷ ' + b + '.' },
+        { e: sE(Q(a - b, 1)), slip: 'You subtracted. ' + a + ' over x means ' + a + ' divided by x, so undo it by multiplying.' },
+        { e: sE(Q(a + b, 1)), slip: 'You added. ' + a + ' over x means ' + a + ' divided by x, so undo it by multiplying.' }
+      ]);
+    }
+    if (form === 1) {
+      ans = sE(Q(b * c, a));
+      return solve('x', null, fr(a, b), F(N(c), x), ans, [
+        { s: 'Cross-multiply. Each top times the other bottom.', parts: [J(N(a), x), N(b * c)] },
+        { s: 'Divide both sides by ' + a + '.', parts: [x, ans] }
+      ], [
+        { e: sE(Q(a * c, b)), slip: 'You paired the wrong numbers. Cross-multiplying pairs each top with the other bottom: ' + a + 'x = ' + b + ' × ' + c + '.' },
+        { e: sE(Q(a * b, c)), slip: 'You multiplied the top and bottom of one fraction. Cross-multiply instead: ' + a + 'x = ' + b + ' × ' + c + '.' },
+        { e: sE(Q(a, b * c)), slip: 'You flipped the last step. x = ' + (b * c) + ' ÷ ' + a + '.' },
+        { e: sE(Q(b * c * a, 1)), slip: 'You multiplied everything together. After cross-multiplying, divide by ' + a + '.' }
+      ]);
+    }
+    ans = sE(Q(a * b, c));
+    return solve('x', null, F(x, N(a)), fr(b, c), ans, [
+      { s: 'x is divided by ' + a + '. Multiply both sides by ' + a + '.', parts: [x, OP(N(a), '·', fr(b, c)), ans] }
+    ], [
+      { e: sE(Q(b, a * c)), slip: 'You divided by ' + a + '. x is already divided by ' + a + ', so multiply both sides by ' + a + '.' },
+      { e: sE(Q(a * c, b)), slip: 'You flipped the fraction ' + b + '/' + c + ' on the way.' },
+      { e: sE(Q(b * c, a)), slip: 'You paired the wrong numbers. x = ' + a + ' × ' + b + ' ÷ ' + c + '.' },
+      { e: sE(Q(a * b * c, 1)), slip: 'You multiplied everything together. The ' + c + ' stays on the bottom.' }
+    ]);
+  }
+  function gSolveRatio() {
+    var form = ri(0, 2), a = ri(2, 9), b = ri(2, 9), c = ri(2, 9);
+    if (a === b) return null;
+    if (form === 0) { a = ri(2, 12); return a === b ? null : mkSolveRatio(0, a, b, 0); }
+    if (gcd(a, b) !== 1 && form === 1) return null;
+    if (gcd(b, c) !== 1 && form === 2) return null;
+    return mkSolveRatio(form, a, b, c);
+  }
+  function gFormula() {
+    var a = Lt('a'), b = Lt('b'), c = Lt('c'), x = Lt('x'), h = Lt('h'), l = Lt('l'), w = Lt('w'), two = N(2), ans, minus, s, u;
+    switch (ri(0, 8)) {
+      case 0:
+        minus = RNG() < 0.4; s = minus ? '−' : '+'; u = minus ? '+' : '−'; ans = F(OP(c, u, b), a);
+        return solve('x', ['a', 'b', 'c'], OP(J(a, x), s, b), c, ans, [
+          { s: (minus ? 'Add b to' : 'Subtract b from') + ' both sides.', parts: [J(a, x), OP(c, u, b)] },
+          { s: 'x is multiplied by a. Divide both sides by a.', parts: [x, ans] }
+        ], [
+          { e: F(OP(c, s, b), a), slip: 'You moved b across without changing its sign. ' + (minus ? 'Add b to' : 'Subtract b from') + ' both sides.' },
+          { e: OP(c, u, F(b, a)), slip: 'You divided only b by a. The whole right side gets divided.' },
+          { e: J(a, Pn(OP(c, u, b))), slip: 'You multiplied by a. The a is multiplying x, so divide by a.' }
+        ]);
+      case 1:
+        var y = Lt('y'), m = Lt('m'); ans = F(OP(y, '−', b), m);
+        return solve('x', ['y', 'm', 'b'], y, OP(J(m, x), '+', b), ans, [
+          { s: 'Subtract b from both sides.', parts: [OP(y, '−', b), J(m, x)] },
+          { s: 'x is multiplied by m. Divide both sides by m.', parts: [x, ans] }
+        ], [
+          { e: F(OP(y, '+', b), m), slip: 'You moved b across without changing its sign. Subtract b from both sides.' },
+          { e: OP(y, '−', F(b, m)), slip: 'You divided only b by m. The whole side gets divided.' },
+          { e: J(m, Pn(OP(y, '−', b))), slip: 'You multiplied by m. The m is multiplying x, so divide by m.' }
+        ]);
+      case 2:
+        var A = Lt('A'); ans = F(J(two, A), b);
+        return solve('h', ['A', 'b'], A, J(fr(1, 2), J(b, h)), ans, [
+          { s: 'Undo the one half. Multiply both sides by 2.', parts: [J(two, A), J(b, h)] },
+          { s: 'h is multiplied by b. Divide both sides by b.', parts: [h, ans] }
+        ], [
+          { e: F(A, J(two, b)), slip: 'You divided by 2. To undo a half, multiply by 2.' },
+          { e: J(two, J(A, b)), slip: 'You multiplied by b. The b is multiplying h, so divide by b.' },
+          { e: F(J(A, b), two), slip: 'Both moves went the wrong way. Multiply by 2 to undo the half, then divide by b.' }
+        ]);
+      case 3:
+        ans = F(a, b);
+        return solve('x', ['a', 'b'], F(a, x), b, ans, [
+          { s: 'x is on the bottom. Multiply both sides by x.', parts: [a, J(b, x)] },
+          { s: 'Divide both sides by b.', parts: [x, ans] }
+        ], [
+          { e: J(a, b), slip: 'You multiplied a and b. x ends up as a divided by b.' },
+          { e: F(b, a), slip: 'You flipped it. x = a ÷ b.' },
+          { e: OP(a, '−', b), slip: 'You subtracted. a over x means a divided by x, so undo it by multiplying.' }
+        ]);
+      case 4:
+        ans = F(J(b, c), a);
+        return solve('x', ['a', 'b', 'c'], F(a, b), F(c, x), ans, [
+          { s: 'Cross-multiply. Each top times the other bottom.', parts: [J(a, x), J(b, c)] },
+          { s: 'Divide both sides by a.', parts: [x, ans] }
+        ], [
+          { e: F(J(a, c), b), slip: 'You paired the wrong letters. Cross-multiplying pairs each top with the other bottom: ax = bc.' },
+          { e: F(J(a, b), c), slip: 'You multiplied the top and bottom of one fraction. Cross-multiply instead: ax = bc.' },
+          { e: F(a, J(b, c)), slip: 'You flipped the last step. x = bc ÷ a.' }
+        ]);
+      case 5:
+        var V = Lt('V'); ans = F(V, J(l, w));
+        return solve('h', ['V', 'l', 'w'], V, J(l, J(w, h)), ans, [
+          { s: 'h is multiplied by l and by w. Divide both sides by lw.', parts: [h, ans] }
+        ], [
+          { e: J(V, J(l, w)), slip: 'You multiplied by lw. They are multiplying h, so divide.' },
+          { e: OP(V, '−', J(l, w)), slip: 'You subtracted. l and w multiply h, so undo them by dividing.' },
+          { e: F(J(l, w), V), slip: 'You flipped it. h = V ÷ lw.' }
+        ]);
+      case 6:
+        var P = Lt('P'); ans = F(OP(P, '−', J(two, l)), two);
+        return solve('w', ['P', 'l'], P, OP(J(two, l), '+', J(two, w)), ans, [
+          { s: 'Subtract 2l from both sides.', parts: [OP(P, '−', J(two, l)), J(two, w)] },
+          { s: 'w is multiplied by 2. Divide both sides by 2.', parts: [w, ans] }
+        ], [
+          { e: F(OP(P, '+', J(two, l)), two), slip: 'You moved 2l across without changing its sign. Subtract 2l from both sides.' },
+          { e: OP(F(P, two), '−', J(two, l)), slip: 'You divided only P by 2. The 2l gets divided too.' },
+          { e: OP(P, '−', J(two, l)), slip: 'You stopped one step early. Divide both sides by 2.' }
+        ]);
+      case 7:
+        var d = Lt('d'), r = Lt('r'), t = Lt('t'); ans = F(d, r);
+        return solve('t', ['d', 'r'], d, J(r, t), ans, [
+          { s: 't is multiplied by r. Divide both sides by r.', parts: [t, ans] }
+        ], [
+          { e: J(d, r), slip: 'You multiplied by r. The r is multiplying t, so divide.' },
+          { e: F(r, d), slip: 'You flipped it. t = d ÷ r.' },
+          { e: OP(d, '−', r), slip: 'You subtracted. r multiplies t, so undo it by dividing.' }
+        ]);
+      default:
+        var C = Lt('C'), pi = Lt('π'), rr = Lt('r'); ans = F(C, J(two, pi));
+        return solve('r', ['C'], C, J(two, J(pi, rr)), ans, [
+          { s: 'r is multiplied by 2 and by π. Divide both sides by 2π.', parts: [rr, ans] }
+        ], [
+          { e: J(J(two, pi), C), slip: 'You multiplied by 2π. They are multiplying r, so divide.' },
+          { e: F(J(two, pi), C), slip: 'You flipped it. r = C ÷ 2π.' },
+          { e: F(J(pi, C), two), slip: 'You divided by 2 but multiplied by π. Both multiply r, so divide by both.' }
+        ], { consts: { 'π': Math.PI } });
+    }
+  }
+  /* mode 0: 1 − 2s² = v (numbers). 1: 2c² − 1 = v (numbers). 2 and 3: the same two shapes with a letter on the right. */
+  function mkSolveSquare(mode, p, q) {
+    var one = N(1), two = N(2), v, g, nn, dd, ans, sq, c = Lt('c'), need;
+    if (mode === 0 || mode === 1) {
+      var plus = mode === 1, name = plus ? 'c' : 's', L = Lt(name), top = plus ? q + p : q - p;
+      g = gcd(top, 2 * q); nn = top / g; dd = 2 * q / g;
+      sq = sE(Q(nn, dd)); ans = PM(sE(rootQ(nn, dd))); v = sE(Q(p, q)); need = sqfree(dd)[1] !== 1;
+      var neg2 = mk(mo('−') + mn(2) + msup(mi(name), mn(2)), '−2' + name + '²', function (env) { return -2 * env[name] * env[name]; });
+      return solve(name, null, plus ? OP(J(two, SQ(L)), '−', one) : OP(one, '−', J(two, SQ(L))), v, ans, [
+        plus ? { s: 'Get the ' + name + '² term alone. Add 1 to both sides.', parts: [J(two, SQ(L)), sE(Q(p + q, q))] } :
+          { s: 'Get the ' + name + '² term alone. Subtract 1 from both sides.', parts: [neg2, sE(Q(p - q, q))] },
+        { s: plus ? 'Divide both sides by 2.' : 'Divide both sides by −2. Two negatives make a positive.', parts: [SQ(L), sq] },
+        { s: 'Take the square root of both sides. Keep both signs.' + (need ? ' Then clear the root from the bottom.' : ''), parts: [L, ans] }
+      ], [
+        { e: PM(sE(rootQ(plus ? q - p : q + p, 2 * q))), slip: 'Check the sign when you move the 1. ' + (plus ? 'Add 1 to both sides.' : 'Subtract 1 from both sides, then divide by −2.') },
+        { e: PM(sq), slip: 'You stopped at ' + name + '². Take the square root of both sides.' },
+        { e: PM(sE(S([[1, top * q]], 2 * q))), slip: 'You took the root before dividing by 2. Divide first, then take the root of the whole fraction.' },
+        { e: PM(sE(S([[1, 2 * top * q]], q))), slip: 'You multiplied by 2. Divide by 2 to get ' + name + '² alone.' },
+        { e: PM(sE(rootQ(top, q))), slip: 'You took the root without dividing by 2 first. Get ' + name + '² alone, then take the root.' }
+      ]);
+    }
+    if (mode === 2) {
+      var s = Lt('s'), neg = mk(mo('−') + mn(2) + msup(mi('s'), mn(2)), '−2s²', function (env) { return -2 * env.s * env.s; });
+      ans = PM(R(F(OP(one, '−', c), two)));
+      return solve('s', ['c'], OP(one, '−', J(two, SQ(s))), c, ans, [
+        { s: 'Get the s² term alone. Subtract 1 from both sides.', parts: [neg, OP(c, '−', one)] },
+        { s: 'Divide both sides by −2. Every sign flips.', parts: [SQ(s), F(OP(one, '−', c), two)] },
+        { s: 'Take the square root of both sides. Keep both signs.', parts: [s, ans] }
+      ], [
+        { e: PM(R(F(OP(one, '+', c), two))), slip: 'Check the signs. Subtract 1 from both sides, then divide by −2. That gives 1 − c on top.' },
+        { e: PM(F(OP(one, '−', c), two)), slip: 'You stopped at s². Take the square root of both sides.' },
+        { e: PM(F(R(OP(one, '−', c)), two)), slip: 'The root covers the whole fraction, bottom included.' }
+      ], { range: [-0.8, 0.8] });
+    }
+    var x = Lt('x'); ans = PM(R(F(OP(c, '+', one), two)));
+    return solve('x', ['c'], OP(J(two, SQ(x)), '−', one), c, ans, [
+      { s: 'Get the x² term alone. Add 1 to both sides.', parts: [J(two, SQ(x)), OP(c, '+', one)] },
+      { s: 'Divide both sides by 2.', parts: [SQ(x), F(OP(c, '+', one), two)] },
+      { s: 'Take the square root of both sides. Keep both signs.', parts: [x, ans] }
+    ], [
+      { e: PM(F(OP(c, '+', one), two)), slip: 'You stopped at x². Take the square root of both sides.' },
+      { e: PM(F(R(OP(c, '+', one)), two)), slip: 'The root covers the whole fraction, bottom included.' },
+      { e: PM(R(J(two, Pn(OP(c, '+', one))))), slip: 'You multiplied by 2. Divide by 2 to get x² alone.' },
+      { e: PM(R(OP(F(c, two), '+', one))), slip: 'You divided only c by 2. The whole side gets divided.' }
+    ], { range: [-0.8, 0.8] });
+  }
+  var SQV = [[1, 2], [0, 1], [-1, 2], [1, 4], [7, 25], [-7, 25], [1, 8], [1, 9], [1, 3], [3, 4], [-1, 8], [-1, 4]];
+  function gSolveSquare() {
+    var roll = RNG(), v = pick(SQV);
+    if (roll < 0.35) return mkSolveSquare(0, v[0], v[1]);
+    if (roll < 0.6) return mkSolveSquare(1, v[0], v[1]);
+    return mkSolveSquare(roll < 0.8 ? 2 : 3, 0, 1);
+  }
+
+  var GEN = {
+    add_plain: function () { return gAddPlain(false); },
+    sub_plain: function () { return gAddPlain(true); },
+    add_whole: function () { var b = pick([2, 3, 4, 5, 6, 8]); return mkWhole(pick([1, 1, 1, 2, 3]), properNum(b), b, RNG() < 0.6); },
+    add_roots: gAddRoots, add_products: gAddProducts,
+    mul_plain: gMul, div_plain: gDiv, div_roots: gDivRoots, over_whole: gOverWhole,
+    root_simplify: gRootSimplify, root_split: gRootSplit, root_rationalize: gRationalize,
+    solve_linear: gSolveLinear, solve_ratio: gSolveRatio, formula_letter: gFormula, solve_square: gSolveSquare
+  };
+  function tag(p, sub) {
+    var i;
+    for (i = 0; i < SUBS.length; i++) if (SUBS[i].key === sub) { p.sub = sub; p.type = SUBS[i].type; }
+    return p;
+  }
+  function gen(sub) {
+    for (var i = 0; i < 200; i++) { var p = GEN[sub](); if (p) return tag(p, sub); }
+    throw new Error('could not build a problem for ' + sub);
+  }
+  /* The 15-problem check: four types, 4 + 4 + 4 + 3, every subtype used before any repeats. */
+  function checkPlan() {
+    var short = ri(0, TYPES.length - 1), list = [];
+    TYPES.forEach(function (t, ti) {
+      var subs = SUBS.filter(function (s) { return s.type === t.id; }).map(function (s) { return s.key; }), n = ti === short ? 3 : 4, pool = [], j;
+      while (pool.length < n) {
+        var round = subs.slice();
+        for (j = round.length - 1; j > 0; j--) { var k = Math.floor(RNG() * (j + 1)), tmp = round[j]; round[j] = round[k]; round[k] = tmp; }
+        pool = pool.concat(round);
+      }
+      list = list.concat(pool.slice(0, n));
+    });
+    for (var i = list.length - 1; i > 0; i--) { var m = Math.floor(RNG() * (i + 1)), x = list[i]; list[i] = list[m]; list[m] = x; }
+    return list;
+  }
+  /*PURE-END*/
+
+  var $ = Kit.$, M = Kit.M, TYPE_NAME = {}, deck = null;
+  TYPES.forEach(function (t) { TYPE_NAME[t.id] = t.name; });
+
+  Kit.init({
+    prefix: 'fr',
+    items: SUBS.map(function (s) { return { key: s.key, name: s.name, group: TYPE_NAME[s.type] }; }),
+    slowMs: null, idleCapMs: 120000, dtCapMs: 180000, planDays: 5, planMinutes: 15,
+    test: { name: 'mixed check', total: 15, passScore: 12 },
+    mastery: function () { return { done: deck ? deck.auto() : 0, total: SUBS.length }; },
+    masteryLabel: 'Solid skills',
+    onShow: function (v) { if (v === 'practice' && !pr.p) newProblem(); }
+  });
+  deck = Kit.deck({ id: 'subs', n: SUBS.length, fastMs: null });
+
+  /* ---------- Rendering shared by every tab ---------- */
+  function questionHTML(p) { return Kit.math(p.eq ? M.row(p.eq[0].m) + M.o('=') + M.row(p.eq[1].m) : p.q.m); }
+  function optionHTML(p, e) { return Kit.math((p.prefix || '') + M.row(e.m)); }
+  function optionText(p, e) { return (p.solveFor ? p.solveFor + ' = ' : '') + e.t; }
+  function chainHTML(p, parts) {
+    return Kit.math((!p.eq && parts.length === 1 ? M.o('=') : '') + parts.map(function (x) { return M.row(x.m); }).join(M.o('=')));
+  }
+  function stepsHTML(p) {
+    return '<ol class="steps">' + p.steps.map(function (s) {
+      return '<li><span>' + Kit.esc(s.s) + '</span><div class="eq">' + chainHTML(p, s.parts) + '</div></li>';
+    }).join('') + '</ol>';
+  }
+  function qKey(p) { return p.eq ? p.eq[0].t + '=' + p.eq[1].t : p.q.t; }
+  /* A fresh problem of one kind, avoiding any question in the `used` map. */
+  function fresh(sub, used) {
+    var p = gen(sub), i;
+    for (i = 0; i < 30 && used[qKey(p)]; i++) p = gen(sub);
+    return p;
+  }
+  function makeOptions(p) {
+    return Kit.shuffle([{ e: p.answer, right: true }].concat(p.wrong.map(function (w) { return { e: w.e, slip: w.slip }; })));
+  }
+  function drawKeys(box, p, opts, onPick) {
+    box.innerHTML = '';
+    opts.forEach(function (o, i) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'key';
+      b.setAttribute('aria-label', optionText(p, o.e));
+      b.innerHTML = optionHTML(p, o.e);
+      b.addEventListener('click', function () { onPick(i, b); });
+      box.appendChild(b);
+    });
+  }
+
+  /* ---------- Practice ---------- */
+  var pr = { type: 'mixed', idx: -1, p: null, opts: [], t0: 0, locked: false, streak: 0 };
+  var savedType = Kit.load('type', 'mixed');
+  if (savedType === 'mixed' || TYPE_NAME[savedType]) pr.type = savedType;
+
+  function buildTypes() {
+    var h = '<button type="button" data-t="mixed">Mixed</button>';
+    TYPES.forEach(function (t) { h += '<button type="button" data-t="' + t.id + '">' + Kit.esc(t.short) + '</button>'; });
+    $('types').innerHTML = h;
+    Array.prototype.forEach.call($('types').querySelectorAll('button'), function (b) {
+      b.addEventListener('click', function () {
+        if (pr.type === b.dataset.t) return;
+        pr.type = b.dataset.t; Kit.save('type', pr.type);
+        $('p-feedback').className = 'feedback'; $('p-feedback').textContent = '';
+        paintTypes(); newProblem();
+      });
+    });
+    paintTypes();
+  }
+  function paintTypes() {
+    Array.prototype.forEach.call($('types').querySelectorAll('button'), function (b) {
+      b.setAttribute('aria-pressed', b.dataset.t === pr.type ? 'true' : 'false');
+    });
+  }
+  function buildSkills() {
+    var h = '';
+    TYPES.forEach(function (t) {
+      h += '<div class="skill"><span class="nm">' + Kit.esc(t.name) + '</span><div class="sw">';
+      SUBS.forEach(function (s, i) { if (s.type === t.id) h += '<span class="lv" data-i="' + i + '" role="img"></span>'; });
+      h += '</div></div>';
+    });
+    $('skills').innerHTML = h;
+  }
+  function paintSide() {
+    Array.prototype.forEach.call($('skills').querySelectorAll('.lv'), function (el) {
+      var i = +el.dataset.i, lv = deck.levels[i];
+      el.className = 'lv' + (lv ? ' lv' + lv : '') + (i === pr.idx ? ' now' : '');
+      el.title = SUBS[i].name;
+      el.setAttribute('aria-label', SUBS[i].name + ': level ' + lv + ' of 3');
+    });
+    $('solid').textContent = deck.auto();
+    $('streak').textContent = pr.streak;
+  }
+  function newProblem() {
+    pr.idx = deck.next(function (i) { return pr.type === 'mixed' || SUBS[i].type === pr.type; });
+    var used = {}; if (pr.p) used[qKey(pr.p)] = 1;
+    pr.p = fresh(SUBS[pr.idx].key, used); pr.opts = makeOptions(pr.p); pr.locked = false;
+    $('p-stage').className = 'stage';
+    $('p-tag').textContent = TYPE_NAME[pr.p.type];
+    $('p-ask').textContent = pr.p.ask;
+    $('p-prompt').innerHTML = questionHTML(pr.p);
+    $('p-next').hidden = true; $('p-show').hidden = true; $('p-steps').hidden = true;
+    drawKeys($('p-keys'), pr.p, pr.opts, answerPractice);
+    paintSide();
+    pr.t0 = performance.now();
+  }
+  function showSteps() {
+    $('p-steps').innerHTML = '<h2 class="sub">How it works</h2>' + stepsHTML(pr.p);
+    $('p-steps').hidden = false; $('p-show').hidden = true;
+  }
+  function answerPractice(i, btn) {
+    if (pr.locked) return;
+    pr.locked = true;
+    var o = pr.opts[i], ok = !!o.right, dt = performance.now() - pr.t0, fb = $('p-feedback');
+    Array.prototype.forEach.call($('p-keys').querySelectorAll('.key'), function (b, j) {
+      b.disabled = true;
+      if (pr.opts[j].right) b.classList.add('right');
+    });
+    deck.mark(pr.idx, ok, dt);
+    Kit.recAnswer(pr.p.sub, ok, dt);
+    if (ok) {
+      pr.streak++;
+      $('p-stage').className = 'stage ok';
+      fb.className = 'feedback good'; fb.innerHTML = '<b>Right.</b>';
+      $('p-show').hidden = false;
+    } else {
+      pr.streak = 0;
+      btn.classList.add('wrong');
+      $('p-stage').className = 'stage no';
+      fb.className = 'feedback bad'; fb.innerHTML = '<b>Not quite.</b> ' + Kit.esc(o.slip);
+      showSteps();
+    }
+    paintSide();
+    $('p-next').hidden = false; $('p-next').focus();
+  }
+  $('p-next').addEventListener('click', function () {
+    $('p-feedback').className = 'feedback'; $('p-feedback').textContent = '';
+    newProblem();
+  });
+  $('p-show').addEventListener('click', showSteps);
+
+  var resetArmed = null;
+  $('reset').addEventListener('click', function () {
+    var b = $('reset');
+    if (!resetArmed) {
+      b.textContent = 'Tap again to clear the map';
+      resetArmed = setTimeout(function () { resetArmed = null; b.textContent = 'Reset this map'; }, 4000);
+      return;
+    }
+    clearTimeout(resetArmed); resetArmed = null; b.textContent = 'Reset this map';
+    deck.reset(); pr.streak = 0;
+    $('p-feedback').className = 'feedback'; $('p-feedback').textContent = 'Map cleared. The report keeps its history.';
+    newProblem();
+  });
+
+  /* ---------- Mixed check ---------- */
+  var ck = { state: 'idle', subs: [], i: 0, p: null, opts: [], used: {}, t0: 0, q0: 0, tick: null, log: [] };
+  function clockText(ms) { return Kit.fmt(ms).replace(/\.\d$/, ''); }
+  function setCheck(state) {
+    ck.state = state;
+    $('c-idle').hidden = state !== 'idle'; $('c-run').hidden = state !== 'run'; $('c-done').hidden = state !== 'done';
+  }
+  function startCheck() {
+    ck.subs = checkPlan(); ck.i = 0; ck.log = []; ck.used = {}; ck.t0 = performance.now();
+    clearInterval(ck.tick);
+    ck.tick = setInterval(function () { $('c-clock').textContent = clockText(performance.now() - ck.t0); }, 500);
+    $('c-clock').textContent = '0:00';
+    setCheck('run');
+    showCheckProblem();
+  }
+  function showCheckProblem() {
+    ck.p = fresh(ck.subs[ck.i], ck.used); ck.used[qKey(ck.p)] = 1; ck.opts = makeOptions(ck.p);
+    $('c-count').textContent = 'Problem ' + (ck.i + 1) + ' of ' + ck.subs.length;
+    $('c-ask').textContent = ck.p.ask;
+    $('c-prompt').innerHTML = questionHTML(ck.p);
+    drawKeys($('c-keys'), ck.p, ck.opts, answerCheck);
+    ck.q0 = performance.now();
+  }
+  function answerCheck(i) {
+    if (ck.state !== 'run') return;
+    var o = ck.opts[i], ok = !!o.right;
+    Kit.recAnswer(ck.p.sub, ok, performance.now() - ck.q0);
+    ck.log.push({ p: ck.p, chosen: o, ok: ok });
+    ck.i++;
+    if (ck.i < ck.subs.length) showCheckProblem(); else finishCheck();
+  }
+  function finishCheck() {
+    clearInterval(ck.tick);
+    var ms = performance.now() - ck.t0, total = ck.log.length, score = 0, h = '', pass, misses;
+    ck.log.forEach(function (r) { if (r.ok) score++; });
+    Kit.recTest(score, total, ms, false);
+    pass = score >= 12; misses = ck.log.filter(function (r) { return !r.ok; });
+    h += '<div class="stats"><div class="stat"><span class="n">' + score + '<small>/' + total + '</small></span><span class="l">Score</span></div>' +
+      '<div class="stat"><span class="n">' + clockText(ms) + '</span><span class="l">Time</span></div></div>';
+    h += '<div class="feedback ' + (pass ? 'good' : 'bad') + '"><b>' + (pass ? 'Passed.' : 'Not yet.') + '</b> The pass mark is 12 of 15. ' +
+      (misses.length ? (pass ? 'Read through the misses below so they do not come back.' : 'Read through the misses below, practice those types, then try again.') : 'No misses. Clean sheet.') + '</div>';
+    h += '<div class="panel blockp"><h2 class="sub">By type</h2><ul class="tally">';
+    TYPES.forEach(function (t) {
+      var n = 0, r = 0;
+      ck.log.forEach(function (x) { if (x.p.type === t.id) { n++; if (x.ok) r++; } });
+      h += '<li>' + Kit.esc(t.name) + '</li><li>' + r + ' of ' + n + '</li>';
+    });
+    h += '</ul></div>';
+    TYPES.forEach(function (t) {
+      misses.forEach(function (x) {
+        if (x.p.type !== t.id) return;
+        h += '<div class="panel blockp miss"><span class="tag">' + Kit.esc(t.name) + '</span>' +
+          '<div class="ask">' + Kit.esc(x.p.ask) + '</div><div class="eq">' + questionHTML(x.p) + '</div>' +
+          '<div class="line"><span class="lab">You chose</span>' + optionHTML(x.p, x.chosen.e) + '<span class="lab">Right answer</span>' + optionHTML(x.p, x.p.answer) + '</div>' +
+          '<p class="why">' + Kit.esc(x.chosen.slip) + '</p>' +
+          '<details><summary>Show the steps</summary>' + stepsHTML(x.p) + '</details></div>';
+      });
+    });
+    $('c-result').innerHTML = h;
+    setCheck('done');
+    $('c-again').focus();
+  }
+  $('c-start').addEventListener('click', startCheck);
+  $('c-again').addEventListener('click', startCheck);
+
+  /* ---------- How to ---------- */
+  function buildHowTo() {
+    var ex = [
+      { t: TYPES[0], rule: 'Fractions can only be added or subtracted when the bottoms match. Scale each one to a common bottom, then combine the tops.', p: mkAddSub(2, 3, 1, 4, false) },
+      { t: TYPES[1], rule: 'To multiply, go straight across. To divide, flip the fraction you are dividing by, then multiply.', p: mkDivRoots(Q(1, 2), S([[1, 3]], 2), true) },
+      { t: TYPES[2], rule: 'Square numbers come out of a root, and a root never stays on the bottom of a fraction.', p: mkRationalize(1, 2) },
+      { t: TYPES[3], rule: 'Undo what was done to the letter, one step at a time, and do the same thing to both sides.', p: mkSolveSquare(2, 0, 1) }
+    ], h = '';
+    ex.forEach(function (e) {
+      h += '<section><h2>' + Kit.esc(e.t.name) + '</h2><p class="rule">' + Kit.esc(e.rule) + '</p>';
+      if (e.p) h += '<div class="panel blockp"><div class="ask">' + Kit.esc(e.p.ask) + '</div><div class="eq">' + questionHTML(e.p) + '</div>' + stepsHTML(e.p) + '</div>';
+      h += '</section>';
+    });
+    h += '<section><h2>How to use this page</h2><p>Do about 15 minutes a day. Work each problem on paper, then pick your answer. When you miss one, read the reason and the steps before you move on. At the end of the week, take the mixed check.</p></section>';
+    $('howto').innerHTML = h;
+  }
+
+  Kit.digitKeys(function (v) {
+    if (v === 'practice') return $('p-keys');
+    if (v === 'check' && ck.state === 'run') return $('c-keys');
+    return null;
+  });
+
+  buildTypes();
+  buildSkills();
+  buildHowTo();
+  paintSide();
+  Kit.start();
+})();
+</script>

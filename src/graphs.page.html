@@ -1,0 +1,703 @@
+<title>Six Trig Graphs</title>
+<style>
+  /* Page layout: the graph sits on a plain surface (its own grid is the graph paper); answers go under it. */
+  .gstage { background: var(--surface); border: 1.5px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; transition: border-color .15s; }
+  .gstage.ok { border-color: var(--good); }
+  .gstage.no { border-color: var(--bad); }
+  .gbox, .pbox { width: 100%; max-width: 560px; }
+  .pbox { max-width: 460px; }
+  .gbox svg, .pbox svg, .gcard svg { display: block; width: 100%; height: auto; }
+  .g-bg { fill: var(--surface); }
+  .g-grid { stroke: var(--line); stroke-width: 1; fill: none; }
+  .g-one { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 4; fill: none; }
+  .g-axis { stroke: var(--ink); stroke-width: 1.3; fill: none; }
+  .g-asym { stroke: var(--muted); stroke-width: 1.3; stroke-dasharray: 7 4; fill: none; }
+  .g-curve { stroke: var(--accent); stroke-width: 2.4; fill: none; stroke-linejoin: round; stroke-linecap: round; }
+  .g-over { stroke: var(--ink); stroke-width: 1.4; fill: none; opacity: .6; stroke-linejoin: round; }
+  .g-lab { fill: var(--muted); font-family: var(--font-body); font-size: 10.5px; }
+
+  .p-dot { fill: var(--line); }
+  .p-hit { fill: var(--surface); fill-opacity: 0; stroke: none; cursor: pointer; }
+  .p-hit:focus-visible { outline: none; stroke: var(--accent); stroke-width: 3; }
+  .p-pick { fill: var(--accent); }
+  .p-pick.right { fill: var(--good); }
+  .p-pick.wrong { fill: var(--bad); }
+  .p-true { fill: none; stroke: var(--good); stroke-width: 2.5; }
+  .p-aline { stroke: var(--accent); stroke-width: 2.4; stroke-dasharray: 7 5; fill: none; }
+  .p-aline.right { stroke: var(--good); }
+  .p-aline.wrong { stroke: var(--bad); }
+  .p-abtn { cursor: pointer; }
+  .p-abtn rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+  .p-abtn.sel rect { stroke: var(--accent); stroke-width: 2.5; }
+  .p-abtn:focus-visible { outline: none; }
+  .p-abtn:focus-visible rect { stroke: var(--accent); stroke-width: 3; }
+  .p-abtn line { stroke: var(--muted); stroke-width: 1.6; stroke-dasharray: 3 3; fill: none; }
+  .p-abtn text { fill: var(--muted); font-family: var(--font-body); font-size: 10px; }
+  .p-ok { fill: var(--good); font-family: var(--font-body); font-size: 13px; font-weight: 600; }
+  .p-no { fill: var(--bad); font-family: var(--font-body); font-size: 13px; font-weight: 600; }
+
+  .seg button { min-height: 44px; font-family: var(--font-math); font-size: 1.05rem; min-width: 64px; }
+  .seg button:disabled { opacity: .5; }
+  .fnkey { font-family: var(--font-math); font-size: 1.3rem; }
+  .ptask { margin: 0; max-width: 60ch; }
+  .fq { font-size: 1.1rem; font-weight: 500; text-align: center; background: var(--surface); padding: 2px 10px; border-radius: 8px; }
+  .lvrow { display: grid; grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr)); gap: 4px; }
+  .lvrow span.lab { font-family: var(--font-math); font-size: .85rem; text-align: center; color: var(--muted); }
+  .fgrid { border-collapse: separate; border-spacing: 3px; width: 100%; table-layout: fixed; margin: -3px; }
+  .fgrid th { font-weight: 500; font-size: .62rem; color: var(--muted); padding: 0; letter-spacing: .02em; }
+  .fgrid th.fn { text-align: left; width: 30px; font-family: var(--font-math); font-size: .9rem; color: var(--ink); font-weight: 400; }
+  .fgrid td { padding: 0; }
+  .fgrid .lv { height: 20px; }
+  .side .panel { display: flex; flex-direction: column; gap: 8px; }
+  .side .panel b { font-family: var(--font-display); }
+  .side .panel p { margin: 0; font-size: .9rem; }
+  .link { padding-block: 10px; }
+  .check { min-height: 44px; }
+  .sixgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 14px; }
+  .gcard { display: flex; flex-direction: column; gap: 8px; }
+  .gcard h3 { margin: 0; font-size: 1.2rem; font-weight: 400; }
+  .gfacts { margin: 0; display: grid; gap: 4px; font-size: .9rem; }
+  .gfacts div { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px; }
+  .gfacts dt { color: var(--muted); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; padding-top: 3px; }
+  .gfacts dd { margin: 0; }
+  .tells { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; max-width: 65ch; }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <h1>Six Trig Graphs</h1>
+    <p>Learn the shapes of sin, cos, tan, cot, sec and csc well enough to sketch each one from memory.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" id="tab-name" data-view="name" aria-selected="true">Name it</button>
+    <button class="tab" role="tab" id="tab-plot" data-view="plot" aria-selected="false">Plot it</button>
+    <button class="tab" role="tab" id="tab-facts" data-view="facts" aria-selected="false">Facts</button>
+    <button class="tab" role="tab" id="tab-all" data-view="all" aria-selected="false">All six</button>
+    <button class="tab" role="tab" id="tab-report" data-view="report" aria-selected="false">Report</button>
+  </nav>
+
+  <!-- Name it -->
+  <section id="view-name" role="tabpanel" aria-labelledby="tab-name">
+    <div class="work">
+      <div class="main">
+        <div class="gstage" id="name-stage">
+          <div class="gbox" id="name-graph"></div>
+          <div class="tag" id="name-tag">Which function is this?</div>
+        </div>
+        <div class="feedback" id="name-fb" aria-live="polite">Tap the function this graph shows. Keys 1 to 6 work too.</div>
+        <div class="keypad" id="keys-name"></div>
+        <button class="primary" id="name-next" hidden>Next graph</button>
+      </div>
+      <aside class="side" aria-label="Progress">
+        <div class="stats">
+          <div class="stat"><span class="n"><span id="name-auto">0</span><small>/6</small></span><span class="l">Automatic</span></div>
+          <div class="stat"><span class="n" id="name-streak">0</span><span class="l">Streak</span></div>
+        </div>
+        <div class="lvrow" id="name-lv"></div>
+        <div class="legend"><span>New</span><span class="lv"></span><span class="lv lv1"></span><span class="lv lv2"></span><span class="lv lv3"></span><span>Automatic</span></div>
+        <p class="note">A graph turns automatic after three right answers in a row, the last one in under 5 seconds. A miss sends it back to new.</p>
+        <button class="link" id="reset">Reset all levels on this device</button>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Plot it -->
+  <section id="view-plot" role="tabpanel" aria-labelledby="tab-plot" hidden>
+    <div class="work">
+      <div class="main">
+        <div class="seg" id="plot-seg" role="group" aria-label="Function to plot">
+          <button type="button" data-f="sin" aria-pressed="true">sin</button>
+          <button type="button" data-f="cos" aria-pressed="false">cos</button>
+          <button type="button" data-f="tan" aria-pressed="false">tan</button>
+        </div>
+        <p class="ptask" id="plot-task"></p>
+        <div class="gstage" id="plot-stage"><div class="pbox" id="plot-box"></div></div>
+        <div class="feedback" id="plot-fb" aria-live="polite"></div>
+        <div class="row">
+          <button class="primary" id="plot-check" disabled>Check</button>
+          <button class="ghost" id="plot-clear">Clear</button>
+          <button class="primary" id="plot-next" hidden>Next plot</button>
+        </div>
+      </div>
+      <aside class="side" aria-label="Progress">
+        <div class="stats">
+          <div class="stat"><span class="n"><span id="plot-auto">0</span><small>/3</small></span><span class="l">Automatic</span></div>
+        </div>
+        <div class="lvrow" id="plot-lv" style="--n: 3"></div>
+        <div class="panel">
+          <b>Shape check</b>
+          <p>Plot sin, cos and tan back to back, from memory. All three right is a pass.</p>
+          <button class="ghost" id="sc-start">Start shape check</button>
+          <p class="note" id="sc-status"></p>
+        </div>
+        <p class="note">A plot turns automatic after three right in a row. Plots are not timed.</p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Facts -->
+  <section id="view-facts" role="tabpanel" aria-labelledby="tab-facts" hidden>
+    <div class="work">
+      <div class="main">
+        <div class="stage" id="fact-stage">
+          <div class="prompt" id="fact-fn" aria-live="polite"></div>
+          <div class="fq" id="fact-q"></div>
+        </div>
+        <div class="feedback" id="fact-fb" aria-live="polite">Pick the answer. Number keys work too.</div>
+        <div class="keypad" id="keys-facts"></div>
+        <button class="primary" id="fact-next" hidden>Next question</button>
+      </div>
+      <aside class="side" aria-label="Progress">
+        <div class="stats">
+          <div class="stat"><span class="n"><span id="fact-auto">0</span><small>/36</small></span><span class="l">Automatic</span></div>
+          <div class="stat"><span class="n" id="fact-streak">0</span><span class="l">Streak</span></div>
+        </div>
+        <table class="fgrid" id="fact-grid" aria-label="Progress on each fact"></table>
+        <div class="legend"><span>New</span><span class="lv"></span><span class="lv lv1"></span><span class="lv lv2"></span><span class="lv lv3"></span><span>Automatic</span></div>
+        <p class="note">Six facts for each graph: period, range, value at 0, zeros, where it is undefined, and its reciprocal.</p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- All six -->
+  <section id="view-all" role="tabpanel" aria-labelledby="tab-all" hidden>
+    <div class="prose">
+      <section>
+        <label class="check" for="all-over"><input type="checkbox" id="all-over"> Show each graph's reciprocal partner as a thin line</label>
+        <p class="note">Your sheet writes cosec for csc. They are the same function.</p>
+        <div class="sixgrid" id="all-grid"></div>
+      </section>
+      <section>
+        <h2>How to tell them apart</h2>
+        <ul class="tells" id="all-tells"></ul>
+      </section>
+    </div>
+  </section>
+
+  <section id="view-report" role="tabpanel" aria-labelledby="tab-report" hidden></section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = Kit.$, M = Kit.M;
+
+  /*PURE-START*/
+  var PI = Math.PI;
+  var FN = {
+    sin: function (x) { return Math.sin(x); },
+    cos: function (x) { return Math.cos(x); },
+    tan: function (x) { return Math.sin(x) / Math.cos(x); },
+    cot: function (x) { return Math.cos(x) / Math.sin(x); },
+    sec: function (x) { return 1 / Math.cos(x); },
+    csc: function (x) { return 1 / Math.sin(x); }
+  };
+  /* period is in units of π. Sets: 'npi' = every multiple of π, 'odd' = odd multiples of π/2, 'none' = nowhere. */
+  var FUNCS = [
+    { id: 'sin', word: 'sine',      period: 2, range: 'unit',  at0: 0,    zeros: 'npi',  asym: 'none', recip: 'csc' },
+    { id: 'cos', word: 'cosine',    period: 2, range: 'unit',  at0: 1,    zeros: 'odd',  asym: 'none', recip: 'sec' },
+    { id: 'tan', word: 'tangent',   period: 1, range: 'all',   at0: 0,    zeros: 'npi',  asym: 'odd',  recip: 'cot' },
+    { id: 'cot', word: 'cotangent', period: 1, range: 'all',   at0: null, zeros: 'odd',  asym: 'npi',  recip: 'tan' },
+    { id: 'sec', word: 'secant',    period: 2, range: 'outer', at0: 1,    zeros: 'none', asym: 'odd',  recip: 'cos' },
+    { id: 'csc', word: 'cosecant',  period: 2, range: 'outer', at0: null, zeros: 'none', asym: 'npi',  recip: 'sin' }
+  ];
+  var BY = {};
+  FUNCS.forEach(function (f) { BY[f.id] = f; });
+
+  /* x values of a set inside the window from −2π to 2π */
+  function setXs(kind) {
+    var out = [], k;
+    if (kind === 'npi') for (k = -2; k <= 2; k++) out.push(k * PI);
+    else if (kind === 'odd') for (k = -3; k <= 3; k += 2) out.push(k * PI / 2);
+    else if (kind === 'only0') out.push(0);
+    return out;
+  }
+  var PERIOD_TEXT = { p05: 'π/2', p1: 'π', p2: '2π', p4: '4π' };
+  var RANGE_TEXT = { unit: 'From −1 to 1', all: 'All real numbers', outer: 'At most −1, or at least 1', pos: 'From 0 to 1' };
+  var SET_TEXT = { npi: 'At every multiple of π', odd: 'At odd multiples of π/2', only0: 'Only at 0', none: 'Nowhere' };
+  var DOMAIN_TEXT = { none: 'All real numbers', odd: 'All x except odd multiples of π/2', npi: 'All x except multiples of π' };
+
+  var FACTS = [
+    { id: 'period', short: 'period',          q: 'What is its period?' },
+    { id: 'range',  short: 'range',           q: 'What is its range?' },
+    { id: 'at0',    short: 'value at 0',      q: 'What is its value at x = 0?' },
+    { id: 'zeros',  short: 'zeros',           q: 'Where does it equal 0?' },
+    { id: 'undef',  short: 'where undefined', q: 'Where is it undefined?' },
+    { id: 'recip',  short: 'reciprocal',      q: 'Which function is 1 divided by it?' }
+  ];
+  function factAnswer(fid, tid) {
+    var f = BY[fid];
+    if (tid === 'period') return f.period === 2 ? 'p2' : 'p1';
+    if (tid === 'range') return f.range;
+    if (tid === 'at0') return f.at0 === null ? 'und' : (f.at0 === 0 ? 'v0' : (f.at0 === 1 ? 'v1' : 'vm1'));
+    if (tid === 'zeros') return f.zeros;
+    if (tid === 'undef') return f.asym;
+    return f.recip;
+  }
+  function factOptions(tid) {
+    function from(ids, text) { return ids.map(function (id) { return { id: id, t: text[id] }; }); }
+    if (tid === 'period') return from(['p05', 'p1', 'p2', 'p4'], PERIOD_TEXT);
+    if (tid === 'range') return from(['unit', 'all', 'outer', 'pos'], RANGE_TEXT);
+    if (tid === 'at0') return [{ id: 'v0', t: '0' }, { id: 'v1', t: '1' }, { id: 'vm1', t: '−1' }, { id: 'und', t: 'Undefined' }];
+    if (tid === 'zeros' || tid === 'undef') return from(['npi', 'odd', 'only0', 'none'], SET_TEXT);
+    return FUNCS.map(function (f) { return { id: f.id, t: f.id }; });
+  }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  var AT0_WHY = {
+    sin: 'sin 0 = 0. The sine wave passes through the origin.',
+    cos: 'cos 0 = 1. The cosine wave starts at its top.',
+    tan: 'tan 0 = sin 0 ÷ cos 0 = 0 ÷ 1 = 0.',
+    cot: 'cot 0 = cos 0 ÷ sin 0 = 1 ÷ 0. You cannot divide by 0, so it is undefined.',
+    sec: 'sec 0 = 1 ÷ cos 0 = 1 ÷ 1 = 1.',
+    csc: 'csc 0 = 1 ÷ sin 0 = 1 ÷ 0. You cannot divide by 0, so it is undefined.'
+  };
+  function factWhy(fid, tid) {
+    var f = BY[fid], w = f.word, W = cap(w), r = f.recip;
+    if (tid === 'period') {
+      if (f.period === 1) return 'Tangent and cotangent repeat every π. That is twice as often as sine and cosine.';
+      if (f.range === 'outer') return W + ' is 1 ÷ ' + r + ' x, so it repeats when ' + BY[r].word + ' does: every 2π.';
+      return W + ' needs a full turn of the unit circle to repeat. A full turn is 2π.';
+    }
+    if (tid === 'range') {
+      if (f.range === 'unit') return W + ' is a coordinate on the unit circle, so it never goes above 1 or below −1.';
+      if (f.range === 'all') return 'Each piece of ' + w + ' runs from far below to far above, so it reaches every number.';
+      return W + ' is 1 ÷ ' + r + ' x. ' + cap(BY[r].word) + ' stays between −1 and 1, so 1 over it is never between −1 and 1.';
+    }
+    if (tid === 'at0') return AT0_WHY[fid];
+    if (tid === 'zeros') {
+      if (fid === 'sin') return 'Sine is 0 at 0, π, 2π and every other multiple of π.';
+      if (fid === 'cos') return 'Cosine is 0 at π/2, 3π/2 and every other odd multiple of π/2.';
+      if (fid === 'tan') return 'Tangent is sin x ÷ cos x, so it is 0 where sine is 0: every multiple of π.';
+      if (fid === 'cot') return 'Cotangent is cos x ÷ sin x, so it is 0 where cosine is 0: odd multiples of π/2.';
+      return '1 divided by a number is never 0, so ' + w + ' never touches the x-axis.';
+    }
+    if (tid === 'undef') {
+      if (f.asym === 'none') return W + ' is defined for every x. Its graph has no breaks and no asymptotes.';
+      if (f.asym === 'odd') return W + ' divides by cos x, so it breaks where cosine is 0: odd multiples of π/2.';
+      return W + ' divides by sin x, so it breaks where sine is 0: every multiple of π.';
+    }
+    if (f.range === 'unit' || fid === 'tan') return r + ' x is defined as 1 ÷ ' + fid + ' x.';
+    return fid + ' x is defined as 1 ÷ ' + r + ' x, so 1 ÷ ' + fid + ' x gives back ' + r + ' x.';
+  }
+
+  /* Label for q quarters of π: 2 -> π/2, 6 -> 3π/2, -8 -> −2π */
+  function piLabel(q) {
+    if (q === 0) return '0';
+    var a = Math.abs(q), g = (a % 4 === 0) ? 4 : (a % 2 === 0 ? 2 : 1), n = a / g, d = 4 / g;
+    return (q < 0 ? '−' : '') + (n === 1 ? '' : n) + 'π' + (d === 1 ? '' : '/' + d);
+  }
+
+  /* Plot keys: q = x positions in quarters of π; key = y value there, or 'A' for an asymptote. */
+  var PLOTS = {
+    sin: { q: [0, 2, 4, 6, 8],   key: [0, 1, 0, -1, 0] },
+    cos: { q: [0, 2, 4, 6, 8],   key: [1, 0, -1, 0, 1] },
+    tan: { q: [-2, -1, 0, 1, 2], key: ['A', -1, 0, 1, 'A'] }
+  };
+  var PLOT_IDS = ['sin', 'cos', 'tan'];
+  function gradePlot(fid, picks) {
+    var key = PLOTS[fid].key, cols = [], ok = true;
+    for (var i = 0; i < key.length; i++) { cols.push(picks[i] === key[i]); if (!cols[i]) ok = false; }
+    return { ok: ok, cols: cols };
+  }
+  var PLOT_WHY = {
+    sin: 'One period of sine goes 0, up to 1, back to 0, down to −1, back to 0.',
+    cos: 'One period of cosine starts at the top and goes 1, 0, −1, 0, 1.',
+    tan: 'Tangent has asymptotes at −π/2 and π/2, where cosine is 0. Between them it goes −1, 0, 1.'
+  };
+  function plotWhy(fid, cols) {
+    var P = PLOTS[fid], fix = [];
+    for (var i = 0; i < cols.length; i++) {
+      if (cols[i]) continue;
+      fix.push('at ' + piLabel(P.q[i]) + (P.key[i] === 'A' ? ' there is an asymptote' : ' it is ' + String(P.key[i]).replace('-', '−')));
+    }
+    return PLOT_WHY[fid] + (fix.length ? ' Fix: ' + fix.join('; ') + '.' : '');
+  }
+
+  /* Curve as separate pieces: a piece ends wherever the value leaves ±lim, so no line crosses an asymptote. */
+  function sampleSegs(fid, x0, x1, n, lim) {
+    var f = FN[fid], segs = [], cur = null, i, x, y;
+    for (i = 0; i <= n; i++) {
+      x = x0 + (x1 - x0) * i / n; y = f(x);
+      if (!isFinite(y) || Math.abs(y) > lim) { cur = null; continue; }
+      if (!cur) { cur = []; segs.push(cur); }
+      cur.push([x, y]);
+    }
+    return segs.filter(function (s) { return s.length > 1; });
+  }
+
+  var TELL = {
+    sin: 'Sine is a smooth wave that passes through 0 when x is 0, then rises to 1 at π/2.',
+    cos: 'Cosine is a smooth wave that starts at its top, 1, when x is 0.',
+    tan: 'Tangent passes through 0 at x = 0 and climbs from left to right in every piece. Its nearest asymptotes are at −π/2 and π/2.',
+    cot: 'Cotangent falls from left to right in every piece. It has an asymptote at x = 0 and crosses zero at π/2.',
+    sec: 'Secant is a row of U shapes that never come between −1 and 1. One U sits right on x = 0, with its bottom at 1.',
+    csc: 'Cosecant is a row of U shapes that never come between −1 and 1. It has an asymptote at x = 0.'
+  };
+  /*PURE-END*/
+
+  /* ---------- Items and kit setup ---------- */
+  var ITEMS = [];
+  FUNCS.forEach(function (f) {
+    ITEMS.push({ key: 'name_' + f.id, name: 'Name the ' + f.id + ' graph', group: f.id });
+    if (PLOTS[f.id]) ITEMS.push({ key: 'plot_' + f.id, name: 'Plot ' + f.id, group: f.id });
+    FACTS.forEach(function (t) { ITEMS.push({ key: 'fact_' + f.id + '_' + t.id, name: f.id + ': ' + t.short, group: f.id }); });
+  });
+  var nameDeck, factDeck, plotDeck;
+
+  Kit.init({
+    prefix: 'graphs', items: ITEMS, slowMs: 5000, planDays: 5, planMinutes: 10,
+    idleCapMs: 45000, dtCapMs: 60000,
+    test: { name: 'shape check', total: 3, passScore: 3 },
+    mastery: function () { return { done: nameDeck.auto() + factDeck.auto() + plotDeck.auto(), total: ITEMS.length }; },
+    masteryLabel: 'Automatic now',
+    onShow: onShow, onReport: onReport
+  });
+  nameDeck = Kit.deck({ id: 'name', n: 6, fastMs: 5000 });
+  factDeck = Kit.deck({ id: 'fact', n: 36, fastMs: 5000 });
+  plotDeck = Kit.deck({ id: 'plot', n: 3, fastMs: null });
+
+  /* ---------- Drawing ---------- */
+  var gid = 0;
+  function graphSVG(fid, over, label) {
+    var W = 360, H = 222, L = 12, R = 348, T = 8, B = 196, mid = (T + B) / 2, S = (B - T) / 6, id = 'gc' + (++gid), h = '', k;
+    function px(x) { return (L + (x + 2 * PI) / (4 * PI) * (R - L)).toFixed(1); }
+    function py(y) { return (mid - y * S).toFixed(1); }
+    function curve(f, cls) {
+      var d = sampleSegs(f, -2 * PI, 2 * PI, 480, 8).map(function (seg) {
+        return 'M' + seg.map(function (p) { return px(p[0]) + ',' + py(p[1]); }).join('L');
+      }).join('');
+      return '<path class="' + cls + '" fill="none" clip-path="url(#' + id + ')" d="' + d + '"></path>';
+    }
+    h += '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + Kit.esc(label) + '">';
+    h += '<defs><clipPath id="' + id + '"><rect x="' + L + '" y="' + T + '" width="' + (R - L) + '" height="' + (B - T) + '"></rect></clipPath></defs>';
+    h += '<rect class="g-bg" x="' + L + '" y="' + T + '" width="' + (R - L) + '" height="' + (B - T) + '"></rect>';
+    for (k = -4; k <= 4; k++) h += '<line class="g-grid" x1="' + px(k * PI / 2) + '" y1="' + T + '" x2="' + px(k * PI / 2) + '" y2="' + B + '"></line>';
+    for (k = -3; k <= 3; k++) if (k) h += '<line class="' + (Math.abs(k) === 1 ? 'g-one' : 'g-grid') + '" x1="' + L + '" y1="' + py(k) + '" x2="' + R + '" y2="' + py(k) + '"></line>';
+    h += '<line class="g-axis" x1="' + L + '" y1="' + py(0) + '" x2="' + R + '" y2="' + py(0) + '"></line>';
+    h += '<line class="g-axis" x1="' + px(0) + '" y1="' + T + '" x2="' + px(0) + '" y2="' + B + '"></line>';
+    setXs(BY[fid].asym).forEach(function (x) { h += '<line class="g-asym" x1="' + px(x) + '" y1="' + T + '" x2="' + px(x) + '" y2="' + B + '"></line>'; });
+    if (over) h += curve(over, 'g-over');
+    h += curve(fid, 'g-curve');
+    for (k = -4; k <= 4; k++) h += '<text class="g-lab" x="' + px(k * PI / 2) + '" y="' + (B + 16) + '" text-anchor="middle">' + piLabel(k * 2) + '</text>';
+    h += '<text class="g-lab" x="' + (+px(0) - 4) + '" y="' + (+py(1) - 3) + '" text-anchor="end">1</text>';
+    h += '<text class="g-lab" x="' + (+px(0) - 4) + '" y="' + (+py(-1) + 11) + '" text-anchor="end">−1</text>';
+    return h + '</svg>';
+  }
+  function fnMath(fid) { return Kit.math(M.fn(fid, M.i('x'))); }
+  function paintLevels(boxId, deck, labels) {
+    var h = '';
+    labels.forEach(function (lab, i) { var lv = deck.levels[i]; h += '<span class="lv' + (lv ? ' lv' + lv : '') + '" role="img" aria-label="' + lab + ': level ' + lv + ' of 3"></span>'; });
+    labels.forEach(function (lab) { h += '<span class="lab">' + lab + '</span>'; });
+    $(boxId).innerHTML = h;
+  }
+
+  /* ---------- Name it ---------- */
+  var ns = { cur: 0, t0: 0, locked: false, streak: 0, timer: null };
+  var keysName = $('keys-name');
+  FUNCS.forEach(function (f, i) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'key fnkey'; b.textContent = f.id; b.setAttribute('aria-label', f.word);
+    b.addEventListener('click', function () { nameAnswer(i, b); });
+    keysName.appendChild(b);
+  });
+  function namePaint() {
+    paintLevels('name-lv', nameDeck, FUNCS.map(function (f) { return f.id; }));
+    $('name-auto').textContent = nameDeck.auto();
+    $('name-streak').textContent = ns.streak;
+  }
+  function nameShow() {
+    clearTimeout(ns.timer);
+    ns.cur = nameDeck.next(); ns.locked = false;
+    $('name-stage').className = 'gstage';
+    $('name-graph').innerHTML = graphSVG(FUNCS[ns.cur].id, null, 'Graph to identify');
+    $('name-tag').textContent = 'Which function is this?';
+    $('name-next').hidden = true;
+    Array.prototype.forEach.call(keysName.querySelectorAll('.key'), function (b) { b.disabled = false; b.classList.remove('right', 'wrong'); });
+    namePaint();
+    ns.t0 = performance.now();
+  }
+  function nameAnswer(i, btn) {
+    if (ns.locked) return;
+    ns.locked = true;
+    var c = ns.cur, f = FUNCS[c], dt = performance.now() - ns.t0, ok = i === c, fb = $('name-fb'), s = (dt / 1000).toFixed(1);
+    var keys = keysName.querySelectorAll('.key');
+    Array.prototype.forEach.call(keys, function (b, k) { b.disabled = true; if (k === c) b.classList.add('right'); });
+    $('name-tag').textContent = 'y = ' + f.id + ' x';
+    nameDeck.mark(c, ok, dt);
+    if (ok) {
+      ns.streak++;
+      $('name-stage').className = 'gstage ok';
+      fb.className = 'feedback good';
+      fb.innerHTML = '<b>Right, ' + s + ' s.</b>' + (dt > 5000 ? ' Under 5 seconds is what counts as automatic.' : '');
+      ns.timer = setTimeout(nameShow, 900);
+    } else {
+      ns.streak = 0;
+      btn.classList.add('wrong');
+      $('name-stage').className = 'gstage no';
+      fb.className = 'feedback bad';
+      fb.innerHTML = '<b>Not ' + FUNCS[i].id + '. This is ' + f.id + ' x.</b> ' + Kit.esc(TELL[f.id]);
+      $('name-next').hidden = false; $('name-next').focus();
+    }
+    namePaint();
+    Kit.recAnswer('name_' + f.id, ok, dt);
+  }
+  $('name-next').addEventListener('click', function () { $('name-fb').className = 'feedback'; $('name-fb').textContent = ''; nameShow(); });
+
+  /* ---------- Facts ---------- */
+  var fs = { cur: 0, t0: 0, locked: false, streak: 0, timer: null };
+  var keysFacts = $('keys-facts');
+  function factGridBuild() {
+    var heads = ['per', 'range', 'at 0', 'zero', 'undef', '1 ÷ f'], h = '<tr><th class="fn"></th>';
+    heads.forEach(function (t) { h += '<th scope="col">' + t + '</th>'; });
+    h += '</tr>';
+    FUNCS.forEach(function (f, fi) {
+      h += '<tr><th class="fn" scope="row">' + f.id + '</th>';
+      FACTS.forEach(function (t, ti) { h += '<td><span class="lv" data-c="' + (fi * 6 + ti) + '"></span></td>'; });
+      h += '</tr>';
+    });
+    $('fact-grid').innerHTML = h;
+  }
+  function factPaint() {
+    Array.prototype.forEach.call($('fact-grid').querySelectorAll('.lv'), function (el) {
+      var c = +el.getAttribute('data-c'), lv = factDeck.levels[c];
+      el.className = 'lv' + (lv ? ' lv' + lv : '') + (c === fs.cur ? ' now' : '');
+      el.setAttribute('role', 'img');
+      el.setAttribute('aria-label', FUNCS[Math.floor(c / 6)].id + ' ' + FACTS[c % 6].short + ': level ' + lv + ' of 3');
+    });
+    $('fact-auto').textContent = factDeck.auto();
+    $('fact-streak').textContent = fs.streak;
+  }
+  function factShow() {
+    clearTimeout(fs.timer);
+    fs.cur = factDeck.next(); fs.locked = false;
+    var f = FUNCS[Math.floor(fs.cur / 6)], t = FACTS[fs.cur % 6], opts = factOptions(t.id);
+    $('fact-stage').className = 'stage';
+    $('fact-fn').innerHTML = fnMath(f.id);
+    $('fact-q').textContent = t.q;
+    $('fact-next').hidden = true;
+    keysFacts.innerHTML = '';
+    keysFacts.style.setProperty('--cols', t.id === 'recip' ? 3 : 2);
+    opts.forEach(function (o) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'key ' + (t.id === 'recip' ? 'fnkey' : 'word'); b.textContent = o.t; b.setAttribute('data-id', o.id);
+      b.addEventListener('click', function () { factAnswer1(o, b); });
+      keysFacts.appendChild(b);
+    });
+    factPaint();
+    fs.t0 = performance.now();
+  }
+  function factAnswer1(o, btn) {
+    if (fs.locked) return;
+    fs.locked = true;
+    var c = fs.cur, f = FUNCS[Math.floor(c / 6)], t = FACTS[c % 6], right = factAnswer(f.id, t.id);
+    var dt = performance.now() - fs.t0, ok = o.id === right, fb = $('fact-fb'), s = (dt / 1000).toFixed(1);
+    Array.prototype.forEach.call(keysFacts.querySelectorAll('.key'), function (b) { b.disabled = true; if (b.getAttribute('data-id') === right) b.classList.add('right'); });
+    factDeck.mark(c, ok, dt);
+    if (ok) {
+      fs.streak++;
+      $('fact-stage').className = 'stage ok';
+      fb.className = 'feedback good';
+      fb.innerHTML = '<b>Right, ' + s + ' s.</b>' + (dt > 5000 ? ' Under 5 seconds is what counts as automatic.' : '');
+      fs.timer = setTimeout(factShow, 900);
+    } else {
+      fs.streak = 0;
+      btn.classList.add('wrong');
+      $('fact-stage').className = 'stage no';
+      fb.className = 'feedback bad';
+      fb.innerHTML = '<b>Not "' + Kit.esc(o.t) + '".</b> ' + Kit.esc(factWhy(f.id, t.id));
+      $('fact-next').hidden = false; $('fact-next').focus();
+    }
+    factPaint();
+    Kit.recAnswer('fact_' + f.id + '_' + t.id, ok, dt);
+  }
+  $('fact-next').addEventListener('click', function () { $('fact-fb').className = 'feedback'; $('fact-fb').textContent = ''; factShow(); });
+
+  /* ---------- Plot it ---------- */
+  var ps = { fid: 'sin', picks: [null, null, null, null, null], done: false, res: null, sc: null };
+  var plotBox = $('plot-box');
+  function pcx(i) { return 40 + i * 70; }
+  function pcy(v) { return 125 - 65 * v; }
+  function plotSVG() {
+    var P = PLOTS[ps.fid], h = '', i, v, cx, pick, cls, lab;
+    h += '<svg viewBox="0 0 360 290" role="group" aria-label="Plotting grid for ' + ps.fid + ' x">';
+    h += '<defs><clipPath id="pclip"><rect x="22" y="30" width="316" height="190"></rect></clipPath></defs>';
+    h += '<rect class="g-bg" x="22" y="30" width="316" height="190"></rect>';
+    for (i = 0; i < 5; i++) h += '<line class="g-grid" x1="' + pcx(i) + '" y1="30" x2="' + pcx(i) + '" y2="220"></line>';
+    h += '<line class="g-one" x1="22" y1="60" x2="338" y2="60"></line><line class="g-one" x1="22" y1="190" x2="338" y2="190"></line>';
+    h += '<line class="g-axis" x1="22" y1="125" x2="338" y2="125"></line>';
+    cx = pcx(P.q.indexOf(0));
+    h += '<line class="g-axis" x1="' + cx + '" y1="30" x2="' + cx + '" y2="220"></line>';
+    h += '<text class="g-lab" x="11" y="64" text-anchor="middle">1</text><text class="g-lab" x="11" y="129" text-anchor="middle">0</text><text class="g-lab" x="11" y="194" text-anchor="middle">−1</text>';
+    if (ps.done) {
+      var x0 = P.q[0] * PI / 4, x1 = P.q[4] * PI / 4;
+      P.key.forEach(function (k, j) { if (k === 'A') h += '<line class="g-asym" x1="' + pcx(j) + '" y1="30" x2="' + pcx(j) + '" y2="220"></line>'; });
+      h += '<path class="g-curve" fill="none" clip-path="url(#pclip)" d="' + sampleSegs(ps.fid, x0, x1, 200, 4).map(function (seg) {
+        return 'M' + seg.map(function (p) { return (40 + (p[0] - x0) / (x1 - x0) * 280).toFixed(1) + ',' + pcy(p[1]).toFixed(1); }).join('L');
+      }).join('') + '"></path>';
+    }
+    for (i = 0; i < 5; i++) {
+      cx = pcx(i); pick = ps.picks[i]; lab = 'x = ' + piLabel(P.q[i]);
+      cls = ps.done ? (ps.res.cols[i] ? ' right' : ' wrong') : '';
+      for (v = 1; v >= -1; v--) h += '<circle class="p-dot" cx="' + cx + '" cy="' + pcy(v) + '" r="3.5"></circle>';
+      if (pick === 'A') h += '<line class="p-aline' + cls + '" x1="' + cx + '" y1="30" x2="' + cx + '" y2="220"></line>';
+      else if (pick !== null) h += '<circle class="p-pick' + cls + '" cx="' + cx + '" cy="' + pcy(pick) + '" r="9"></circle>';
+      if (ps.done) {
+        if (!ps.res.cols[i] && P.key[i] !== 'A') h += '<circle class="p-true" cx="' + cx + '" cy="' + pcy(P.key[i]) + '" r="12"></circle>';
+        h += '<text class="' + (ps.res.cols[i] ? 'p-ok' : 'p-no') + '" x="' + cx + '" y="22" text-anchor="middle">' + (ps.res.cols[i] ? '✓' : '✕') + '</text>';
+      } else {
+        for (v = 1; v >= -1; v--) {
+          h += '<circle class="p-hit" cx="' + cx + '" cy="' + pcy(v) + '" r="22" tabindex="0" role="button" data-col="' + i + '" data-val="' + v + '" aria-pressed="' + (pick === v) + '" aria-label="' + lab + ', y = ' + String(v).replace('-', '−') + '"></circle>';
+        }
+        h += '<g class="p-abtn' + (pick === 'A' ? ' sel' : '') + '" tabindex="0" role="button" data-col="' + i + '" data-val="A" aria-pressed="' + (pick === 'A') + '" aria-label="' + lab + ', asymptote">' +
+          '<rect x="' + (cx - 31) + '" y="240" width="62" height="44" rx="8"></rect>' +
+          '<line x1="' + cx + '" y1="246" x2="' + cx + '" y2="264"></line>' +
+          '<text x="' + cx + '" y="278" text-anchor="middle">asymptote</text></g>';
+      }
+      h += '<text class="g-lab" x="' + cx + '" y="234" text-anchor="middle">' + piLabel(P.q[i]) + '</text>';
+    }
+    return h + '</svg>';
+  }
+  function plotPaint(focus) {
+    plotBox.innerHTML = plotSVG();
+    var full = ps.picks.every(function (p) { return p !== null; });
+    $('plot-check').disabled = ps.done || !full;
+    $('plot-check').hidden = ps.done;
+    $('plot-clear').hidden = ps.done;
+    $('plot-next').hidden = !ps.done;
+    Array.prototype.forEach.call($('plot-seg').querySelectorAll('button'), function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-f') === ps.fid ? 'true' : 'false');
+      b.disabled = !!ps.sc;
+    });
+    paintLevels('plot-lv', plotDeck, PLOT_IDS);
+    $('plot-auto').textContent = plotDeck.auto();
+    $('sc-start').hidden = !!ps.sc;
+    if (focus) { var el = plotBox.querySelector('[data-col="' + focus[0] + '"][data-val="' + focus[1] + '"]'); if (el && el.focus) el.focus(); }
+  }
+  function plotLoad(fid) {
+    ps.fid = fid; ps.picks = [null, null, null, null, null]; ps.done = false; ps.res = null;
+    $('plot-stage').className = 'gstage';
+    var range = fid === 'tan' ? 'Plot tan x between −π/2 and π/2.' : 'Plot one period of ' + fid + ' x, from 0 to 2π.';
+    $('plot-task').textContent = (ps.sc ? 'Shape check, plot ' + (ps.sc.i + 1) + ' of 3. ' : '') + range + ' Tap one spot in each column: 1, 0 or −1. Use the asymptote button where the graph breaks.';
+    $('plot-fb').className = 'feedback'; $('plot-fb').textContent = '';
+    $('plot-next').textContent = 'Next plot';
+    plotPaint(null);
+  }
+  function plotTap(el) {
+    if (ps.done || !el) return;
+    var col = +el.getAttribute('data-col'), raw = el.getAttribute('data-val'), val = raw === 'A' ? 'A' : +raw;
+    ps.picks[col] = ps.picks[col] === val ? null : val;
+    plotPaint([col, raw]);
+  }
+  plotBox.addEventListener('click', function (e) { plotTap(e.target.closest ? e.target.closest('[data-col]') : null); });
+  plotBox.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var el = e.target.closest ? e.target.closest('[data-col]') : null;
+    if (el) { e.preventDefault(); plotTap(el); }
+  });
+  function scStatus() {
+    var last = Kit.load('sc.last', null), el = $('sc-status');
+    if (ps.sc) el.textContent = 'Shape check running: plot ' + (ps.sc.i + 1) + ' of 3.';
+    else if (last && typeof last.s === 'number' && typeof last.ms === 'number') el.textContent = 'Last shape check: ' + last.s + ' of 3 in ' + Kit.fmt(last.ms) + '.';
+    else el.textContent = 'No shape check yet on this device.';
+  }
+  function plotCheck() {
+    if (ps.done || ps.picks.some(function (p) { return p === null; })) return;
+    ps.res = gradePlot(ps.fid, ps.picks); ps.done = true;
+    var ok = ps.res.ok, fb = $('plot-fb');
+    plotDeck.mark(PLOT_IDS.indexOf(ps.fid), ok, 0);
+    $('plot-stage').className = 'gstage ' + (ok ? 'ok' : 'no');
+    fb.className = 'feedback ' + (ok ? 'good' : 'bad');
+    fb.innerHTML = ok ? '<b>Right.</b> That is the shape of ' + ps.fid + ' x. The curve is drawn through your points.'
+      : '<b>Not quite.</b> ' + Kit.esc(plotWhy(ps.fid, ps.res.cols));
+    Kit.recAnswer('plot_' + ps.fid, ok, 0);      /* plots are untimed: no time is recorded for them */
+    if (ps.sc) {
+      if (ok) ps.sc.score++;
+      if (ps.sc.i === 2) {
+        var ms = performance.now() - ps.sc.t0, score = ps.sc.score;
+        Kit.recTest(score, 3, ms, false);
+        Kit.save('sc.last', { s: score, ms: Math.round(ms) });
+        ps.sc = null;
+        fb.innerHTML += ' <b>Shape check: ' + score + ' of 3 in ' + Kit.fmt(ms) + '.</b>' + (score === 3 ? ' That is a pass.' : ' All three right is a pass. Try it again.');
+      } else {
+        $('plot-next').textContent = 'Next plot (' + (ps.sc.i + 2) + ' of 3)';
+      }
+    }
+    plotPaint(null);
+    if (ps.sc) $('plot-next').textContent = 'Next plot (' + (ps.sc.i + 2) + ' of 3)';
+    scStatus();
+    $('plot-next').focus();
+  }
+  $('plot-check').addEventListener('click', plotCheck);
+  $('plot-clear').addEventListener('click', function () { if (!ps.done) { ps.picks = [null, null, null, null, null]; plotPaint(null); } });
+  $('plot-next').addEventListener('click', function () {
+    if (ps.sc) { ps.sc.i++; plotLoad(ps.sc.order[ps.sc.i]); scStatus(); return; }
+    plotLoad(PLOT_IDS[plotDeck.next()]);
+  });
+  Array.prototype.forEach.call($('plot-seg').querySelectorAll('button'), function (b) {
+    b.addEventListener('click', function () { if (!ps.sc) plotLoad(b.getAttribute('data-f')); });
+  });
+  $('sc-start').addEventListener('click', function () {
+    ps.sc = { order: Kit.shuffle(PLOT_IDS), i: 0, score: 0, t0: performance.now() };
+    plotLoad(ps.sc.order[0]); scStatus();
+  });
+
+  /* ---------- All six ---------- */
+  var allBuilt = false;
+  function allBuild() {
+    var over = $('all-over').checked, h = '';
+    FUNCS.forEach(function (f) {
+      h += '<div class="panel gcard"><h3>' + fnMath(f.id) + '</h3>' +
+        graphSVG(f.id, over ? f.recip : null, 'Graph of ' + f.word + (over ? ' with ' + BY[f.recip].word + ' as a thin line' : '')) +
+        '<dl class="gfacts"><div><dt>Domain</dt><dd>' + DOMAIN_TEXT[f.asym] + '</dd></div>' +
+        '<div><dt>Range</dt><dd>' + RANGE_TEXT[f.range] + '</dd></div>' +
+        '<div><dt>Period</dt><dd>' + (f.period === 2 ? '2π' : 'π') + '</dd></div>' +
+        (over ? '<div><dt>Thin line</dt><dd>' + f.recip + ' x, which is 1 ÷ ' + f.id + ' x</dd></div>' : '') + '</dl></div>';
+    });
+    $('all-grid').innerHTML = h;
+    if (!allBuilt) {
+      $('all-tells').innerHTML = FUNCS.map(function (f) { return '<li>' + Kit.esc(TELL[f.id]) + '</li>'; }).join('');
+      allBuilt = true;
+    }
+  }
+  $('all-over').addEventListener('change', allBuild);
+
+  /* ---------- Shared hooks ---------- */
+  function onShow(v) {
+    var now = performance.now();
+    if (v === 'name' && !ns.locked) ns.t0 = now;
+    if (v === 'facts' && !fs.locked) fs.t0 = now;
+    if (v === 'all') allBuild();
+  }
+  /* Plots are untimed, so their rows say so instead of showing a time. */
+  function onReport() {
+    Array.prototype.forEach.call(document.querySelectorAll('#kit-report .itable tbody tr'), function (row) {
+      var c = row.cells;
+      if (c.length === 4 && /^Plot /.test(c[0].textContent) && !row.classList.contains('none')) c[2].textContent = 'untimed';
+    });
+  }
+  var resetArmed = null;
+  $('reset').addEventListener('click', function () {
+    var b = $('reset');
+    if (!resetArmed) {
+      b.textContent = 'Tap again to clear all levels';
+      resetArmed = setTimeout(function () { resetArmed = null; b.textContent = 'Reset all levels on this device'; }, 4000);
+      return;
+    }
+    clearTimeout(resetArmed); resetArmed = null; b.textContent = 'Reset all levels on this device';
+    nameDeck.reset(); factDeck.reset(); plotDeck.reset();
+    ns.streak = 0; fs.streak = 0;
+    $('name-fb').className = 'feedback'; $('name-fb').textContent = 'Levels cleared. The report keeps its history.';
+    nameShow(); factShow(); plotPaint(null);
+  });
+
+  /* ---------- Boot ---------- */
+  factGridBuild();
+  nameShow();
+  factShow();
+  plotLoad('sin');
+  scStatus();
+  Kit.digitKeys(function (view) { return view === 'name' ? keysName : (view === 'facts' ? keysFacts : null); });
+  Kit.start();
+})();
+</script>

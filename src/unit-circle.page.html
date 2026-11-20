@@ -1,0 +1,746 @@
+<title>Unit Circle Trainer</title>
+<style>
+  /* Layout: the circle is the page. The question sits at the origin, the answer keys sit under it. */
+  .circ { position: relative; width: 100%; max-width: 420px; align-self: center; border: 1.5px solid var(--line); border-radius: 14px; transition: border-color .15s; }
+  .circ.sm { max-width: 300px; }
+  .circ.ok { border-color: var(--good); }
+  .circ.no { border-color: var(--bad); }
+  .circ svg { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; }
+  .axis { stroke: var(--line); stroke-width: 1.5; fill: none; }
+  .ring { stroke: var(--ink); stroke-width: 2; fill: none; }
+  .dot { cursor: pointer; }
+  .dot:focus-visible { outline: none; }
+  .still .dot { cursor: default; }
+  .dot .halo { fill: none; stroke: none; stroke-width: 3; }
+  .dot .pt { fill: var(--surface); stroke: var(--ink); stroke-width: 2; }
+  .dot:focus-visible .halo { stroke: var(--accent); }
+  .dot.on .pt { fill: var(--accent); stroke: var(--accent); }
+  .dot.on .halo { stroke: var(--accent); stroke-width: 2; }
+  .dot.filled .pt { fill: var(--muted); stroke: var(--muted); }
+  .dot.right .pt { fill: var(--good); stroke: var(--good); }
+  .dot.wrong .pt { fill: var(--bad); stroke: var(--bad); }
+  .lab { fill: var(--ink); font-family: var(--font-math); font-size: 14px; display: none; }
+  .dot.show .lab { display: block; }
+
+  .hub {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: 58%;
+    background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 8px 12px;
+    display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; text-align: center;
+  }
+  .hub .ang { font-size: clamp(1.5rem, 6vw, 2rem); line-height: 1.1; }
+  .hub .pair { font-size: 1.05rem; }
+  .circ.sm .hub .ang { font-size: 1.3rem; }
+  .ask { margin: 0; font-weight: 600; }
+
+  .mini { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 6px; }
+  .mini div { display: flex; flex-direction: column; gap: 3px; font-size: .8rem; text-align: center; font-family: var(--font-math); }
+  .mini .lv { height: 14px; }
+
+  .tbar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 20px; }
+  .goal { color: var(--muted); font-size: .9rem; font-variant-numeric: tabular-nums; }
+  .goal b { color: var(--ink); font-weight: 600; }
+  .chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .chip {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 46px; min-width: 0;
+    padding: 4px 10px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 8px; font-size: .95rem;
+  }
+  .chip.sel { border-color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .chip.right { background: var(--good-bg); border-color: var(--good); }
+  .chip.wrong { background: var(--bad-bg); border-color: var(--bad); }
+  .chip .mk { font-size: .72rem; font-weight: 600; font-family: var(--font-body); }
+  .chip.right .mk { color: var(--good); }
+  .chip.wrong .mk { color: var(--bad); }
+
+  #see-svg { touch-action: none; cursor: grab; }
+  .seg-r { stroke: var(--ink); stroke-width: 2; fill: none; }
+  .seg-cos { stroke: var(--accent); stroke-width: 5; stroke-linecap: round; fill: none; }
+  .seg-sin { stroke: var(--good); stroke-width: 5; stroke-linecap: round; fill: none; }
+  .tickdot { fill: var(--muted); stroke: none; }
+  .see-pt { fill: var(--ink); stroke: var(--surface); stroke-width: 2; }
+  .slab { font-family: var(--font-body); font-size: 13px; font-weight: 600; stroke: none; }
+  .slab.c { fill: var(--accent); }
+  .slab.s { fill: var(--good); }
+  .facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; align-items: center; margin: 0; }
+  .facts dt { font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .facts dd { margin: 0; font-size: 1.1rem; min-width: 0; }
+  .facts dd.txt { font-size: .95rem; }
+  .signs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .sg { border: 1.5px solid var(--line); border-radius: 8px; padding: 5px 9px; font-size: .85rem; }
+  .sg.pos { border-color: var(--accent); }
+  .key-c { color: var(--accent); font-weight: 600; }
+  .key-s { color: var(--good); font-weight: 600; }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <h1>Unit Circle Trainer</h1>
+    <p>Sixteen angles around a circle of radius 1. Learn where each one sits and the point it lands on.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" id="tab-find" data-view="find" aria-selected="true">Find it</button>
+    <button class="tab" role="tab" id="tab-read" data-view="read" aria-selected="false">Read it</button>
+    <button class="tab" role="tab" id="tab-blank" data-view="blank" aria-selected="false">Blank circle</button>
+    <button class="tab" role="tab" id="tab-see" data-view="see" aria-selected="false">See it</button>
+    <button class="tab" role="tab" id="tab-report" data-view="report" aria-selected="false">Report</button>
+  </nav>
+
+  <!-- Find it -->
+  <section id="view-find" role="tabpanel" aria-labelledby="tab-find">
+    <div class="work">
+      <div class="main">
+        <div class="circ paper" id="find-circ">
+          <svg id="find-svg" role="group" aria-label="Blank unit circle with 16 dots"></svg>
+          <div class="hub" aria-live="polite"><div class="ang" id="find-ang"></div><div class="tag" id="find-deg"></div></div>
+        </div>
+        <div class="feedback" id="find-fb" aria-live="polite">Tap the dot where this angle sits. Angles start at the right and go counter-clockwise.</div>
+        <button class="primary" id="find-next" hidden>Next angle</button>
+      </div>
+      <aside class="side" aria-label="Progress on finding angles">
+        <div class="stats">
+          <div class="stat"><span class="n"><span id="find-auto">0</span><small>/16</small></span><span class="l">Automatic</span></div>
+          <div class="stat"><span class="n" id="find-streak">0</span><span class="l">Streak</span></div>
+        </div>
+        <div class="mini" id="find-mini"></div>
+        <div class="legend"><span>New</span><span class="lv"></span><span class="lv lv1"></span><span class="lv lv2"></span><span class="lv lv3"></span><span>Automatic</span></div>
+        <p class="note">An angle turns automatic after three right answers in a row, the last one in under 5 seconds. A miss sends it back to new and brings it up again two turns later.</p>
+        <label class="check" for="show-deg"><input type="checkbox" id="show-deg"> Show degrees next to each angle</label>
+        <button class="link" id="find-reset">Reset this grid</button>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Read it -->
+  <section id="view-read" role="tabpanel" aria-labelledby="tab-read" hidden>
+    <div class="work">
+      <div class="main">
+        <div class="circ sm paper still" id="read-circ">
+          <svg id="read-svg" role="img" aria-label="Unit circle with one dot highlighted"></svg>
+          <div class="hub" aria-live="polite"><div class="ang" id="read-ang"></div><div class="tag" id="read-deg"></div><div class="pair" id="read-pair"></div></div>
+        </div>
+        <p class="ask" id="read-ask"></p>
+        <div class="keypad" id="read-keys"></div>
+        <div class="feedback" id="read-fb" aria-live="polite">The point is (cos, sin). Keys 1 to 9 work too.</div>
+        <button class="primary" id="read-next" hidden>Next point</button>
+      </div>
+      <aside class="side" aria-label="Progress on reading points">
+        <div class="stats">
+          <div class="stat"><span class="n"><span id="read-auto">0</span><small>/16</small></span><span class="l">Automatic</span></div>
+          <div class="stat"><span class="n" id="read-streak">0</span><span class="l">Streak</span></div>
+        </div>
+        <div class="mini" id="read-mini"></div>
+        <div class="legend"><span>New</span><span class="lv"></span><span class="lv lv1"></span><span class="lv lv2"></span><span class="lv lv3"></span><span>Automatic</span></div>
+        <p class="note">Both values have to be right. A point turns automatic after three right answers in a row, the last one in under 5 seconds.</p>
+        <button class="link" id="read-reset">Reset this grid</button>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Blank circle -->
+  <section id="view-blank" role="tabpanel" aria-labelledby="tab-blank" hidden>
+    <div class="work tw">
+      <div class="main">
+        <div class="tbar">
+          <div class="clock" id="blank-clock" aria-label="Time">0:00.0</div>
+          <div class="goal">Goal: <b>16 of 16 in under 5:00</b> · Best: <b id="blank-best">none yet</b></div>
+        </div>
+        <div class="circ sm paper" id="blank-circ">
+          <svg id="blank-svg" role="group" aria-label="Unit circle with 16 points to fill in"></svg>
+          <div class="hub"><div class="ang" id="blank-ang"></div><div class="pair" id="blank-pair"></div></div>
+        </div>
+        <div class="feedback" id="blank-fb" aria-live="polite"></div>
+      </div>
+      <div class="main">
+        <div class="keypad" id="blank-keys"></div>
+        <div class="row">
+          <button class="primary" id="blank-check" disabled>Check</button>
+          <button class="ghost" id="blank-again">Start over</button>
+        </div>
+        <label class="check" for="blank-jump"><input type="checkbox" id="blank-jump"> Jump around (random order)</label>
+        <div class="chips" id="blank-chips"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- See it -->
+  <section id="view-see" role="tabpanel" aria-labelledby="tab-see" hidden>
+    <div class="work tw">
+      <div class="main">
+        <div class="circ paper">
+          <svg id="see-svg" tabindex="0" role="application" aria-label="Unit circle. Drag the point or use the arrow keys to change the angle."></svg>
+        </div>
+        <div class="row">
+          <button class="ghost" id="see-prev">Previous angle</button>
+          <button class="ghost" id="see-next">Next angle</button>
+        </div>
+        <p class="note">Drag the point around the circle, or use the buttons. It stops at the sixteen angles you need to know.</p>
+      </div>
+      <div class="main" aria-live="polite">
+        <div class="panel">
+          <dl class="facts">
+            <dt>Angle</dt><dd id="see-ang"></dd>
+            <dt>Point</dt><dd id="see-point"></dd>
+            <dt><span class="key-c">cos</span>, the x value</dt><dd id="see-cos"></dd>
+            <dt><span class="key-s">sin</span>, the y value</dt><dd id="see-sin"></dd>
+            <dt>tan, y ÷ x</dt><dd id="see-tan"></dd>
+            <dt>Where</dt><dd class="txt" id="see-where"></dd>
+          </dl>
+        </div>
+        <div class="signs" id="see-signs"></div>
+        <p class="note" id="see-why"></p>
+        <p class="note">The circle has radius 1, so the point itself is the answer. How far right or left it sits is cos. How far up or down it sits is sin.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-report" role="tabpanel" aria-labelledby="tab-report" hidden></section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = Kit.$;
+
+  /*PURE-START*/
+  /* The sixteen standard angles as [numerator, denominator, degrees]: angle = numerator·π / denominator. */
+  var ANG = [[0, 1, 0], [1, 6, 30], [1, 4, 45], [1, 3, 60], [1, 2, 90], [2, 3, 120], [3, 4, 135], [5, 6, 150],
+    [1, 1, 180], [7, 6, 210], [5, 4, 225], [4, 3, 240], [3, 2, 270], [5, 3, 300], [7, 4, 315], [11, 6, 330]]
+    .map(function (a, i) { return { i: i, num: a[0], den: a[1], deg: a[2], rad: a[0] * Math.PI / a[1] }; });
+  var N = ANG.length;
+
+  function fr(top, bot) { return '<mfrac>' + top + '<mn>' + bot + '</mn></mfrac>'; }
+  function neg(m) { return '<mrow><mo>−</mo>' + m + '</mrow>'; }
+  var R2 = '<msqrt><mn>2</mn></msqrt>', R3 = '<msqrt><mn>3</mn></msqrt>';
+  var VAL = {
+    m1:   { t: '−1',    v: -1,                m: neg('<mn>1</mn>') },
+    mr32: { t: '−√3/2', v: -Math.sqrt(3) / 2, m: neg(fr(R3, 2)) },
+    mr22: { t: '−√2/2', v: -Math.sqrt(2) / 2, m: neg(fr(R2, 2)) },
+    mh:   { t: '−1/2',  v: -0.5,              m: neg(fr('<mn>1</mn>', 2)) },
+    z:    { t: '0',     v: 0,                 m: '<mn>0</mn>' },
+    h:    { t: '1/2',   v: 0.5,               m: fr('<mn>1</mn>', 2) },
+    r22:  { t: '√2/2',  v: Math.sqrt(2) / 2,  m: fr(R2, 2) },
+    r32:  { t: '√3/2',  v: Math.sqrt(3) / 2,  m: fr(R3, 2) },
+    o:    { t: '1',     v: 1,                 m: '<mn>1</mn>' }
+  };
+  var KEYS = ['m1', 'mr32', 'mr22', 'mh', 'z', 'h', 'r22', 'r32', 'o'];
+  var MAG_COS = { 0: 'o', 30: 'r32', 45: 'r22', 60: 'h', 90: 'z' };
+  var MAG_SIN = { 0: 'z', 30: 'h', 45: 'r22', 60: 'r32', 90: 'o' };
+  var NEG = { o: 'm1', r32: 'mr32', r22: 'mr22', h: 'mh', z: 'z' };
+  var REF_TEXT = { 30: 'π/6', 45: 'π/4', 60: 'π/3' };
+  var TAN = {
+    0:  { t: '0',    v: 0,                m: '<mn>0</mn>' },
+    30: { t: '√3/3', v: Math.sqrt(3) / 3, m: fr(R3, 3) },
+    45: { t: '1',    v: 1,                m: '<mn>1</mn>' },
+    60: { t: '√3',   v: Math.sqrt(3),     m: R3 }
+  };
+  var ROMAN = ['', 'I', 'II', 'III', 'IV'];
+  var GROUPS = ['On the axes', 'Quadrant I', 'Quadrant II', 'Quadrant III', 'Quadrant IV'];
+
+  /* Reference angle: the gap between the angle and the x-axis, in degrees (0 to 90). */
+  function refDeg(deg) { var d = deg % 180; return d > 90 ? 180 - d : d; }
+  /* 1 to 4, or 0 when the angle lands on an axis. */
+  function quadrant(deg) { return deg % 90 === 0 ? 0 : Math.floor(deg / 90) + 1; }
+  function signs(deg) {
+    return {
+      cos: (deg < 90 || deg > 270) ? 1 : (deg === 90 || deg === 270) ? 0 : -1,
+      sin: (deg > 0 && deg < 180) ? 1 : (deg === 0 || deg === 180) ? 0 : -1
+    };
+  }
+  function cosKey(i) { var d = ANG[i].deg, k = MAG_COS[refDeg(d)]; return signs(d).cos < 0 ? NEG[k] : k; }
+  function sinKey(i) { var d = ANG[i].deg, k = MAG_SIN[refDeg(d)]; return signs(d).sin < 0 ? NEG[k] : k; }
+  /* tan as { t, v, m }; v is null where tan is undefined. */
+  function tanOf(i) {
+    var d = ANG[i].deg, r = refDeg(d);
+    if (r === 90) return { t: 'undefined', v: null, m: '<mtext>undefined</mtext>' };
+    var s = signs(d), minus = s.cos * s.sin < 0, base = TAN[r];
+    return minus ? { t: '−' + base.t, v: -base.v, m: neg(base.m) } : base;
+  }
+  function angText(i) {
+    var a = ANG[i];
+    if (a.num === 0) return '0';
+    return (a.num === 1 ? '' : a.num) + 'π' + (a.den === 1 ? '' : '/' + a.den);
+  }
+  function angMath(i) {
+    var a = ANG[i];
+    if (a.num === 0) return '<mn>0</mn>';
+    var top = (a.num === 1 ? '' : '<mn>' + a.num + '</mn>') + '<mi>π</mi>';
+    return a.den === 1 ? '<mrow>' + top + '</mrow>' : '<mfrac><mrow>' + top + '</mrow><mn>' + a.den + '</mn></mfrac>';
+  }
+  function groupOf(i) { return GROUPS[quadrant(ANG[i].deg)]; }
+  function pairText(i) { return '(' + VAL[cosKey(i)].t + ', ' + VAL[sinKey(i)].t + ')'; }
+  function axisText(deg) {
+    return { 0: 'on the positive x-axis, the far right of the circle', 90: 'on the positive y-axis, the top of the circle',
+      180: 'on the negative x-axis, the far left of the circle', 270: 'on the negative y-axis, the bottom of the circle' }[deg];
+  }
+  function signRule(q) {
+    return ['', 'In Quadrant I, x and y are both positive.', 'In Quadrant II, x is negative and y is positive.',
+      'In Quadrant III, x and y are both negative.', 'In Quadrant IV, x is positive and y is negative.'][q];
+  }
+  /* Where an angle sits, in words. */
+  function whereText(i) {
+    var d = ANG[i].deg, q = quadrant(d), r = REF_TEXT[refDeg(d)];
+    if (q === 0) return angText(i) + ' is ' + axisText(d) + '.';
+    return angText(i) + ' is ' + [
+      '', r + ' above the positive x-axis, in Quadrant I.',
+      r + ' short of π, so it sits above the negative x-axis, in Quadrant II.',
+      r + ' past π, so it sits below the negative x-axis, in Quadrant III.',
+      r + ' short of 2π, so it sits below the positive x-axis, in Quadrant IV.'][q];
+  }
+  /* Why the point is what it is. */
+  function explainRead(i) {
+    var d = ANG[i].deg, q = quadrant(d), r = refDeg(d);
+    if (q === 0) return angText(i) + ' is ' + axisText(d) + '. The point there is ' + pairText(i) + '.';
+    return angText(i) + ' is in Quadrant ' + ROMAN[q] + '. Its reference angle is ' + REF_TEXT[r] + ', so the sizes are ' +
+      VAL[MAG_COS[r]].t + ' for x and ' + VAL[MAG_SIN[r]].t + ' for y. ' + signRule(q) + ' The point is ' + pairText(i) + '.';
+  }
+  function dotXY(i, c, r) { return { x: c + r * Math.cos(ANG[i].rad), y: c - r * Math.sin(ANG[i].rad) }; }
+  /* Index of the standard angle closest to the direction from the center (c, c) to (x, y). */
+  function nearestAngle(x, y, c) {
+    var deg = Math.atan2(c - y, x - c) * 180 / Math.PI, best = 0, bestGap = 999;
+    if (deg < 0) deg += 360;
+    for (var i = 0; i < N; i++) {
+      var gap = Math.abs(ANG[i].deg - deg);
+      if (gap > 180) gap = 360 - gap;
+      if (gap < bestGap) { bestGap = gap; best = i; }
+    }
+    return best;
+  }
+  /* The dot a tap at (x, y) means, or -1 when the tap is too far from every dot. */
+  function hitDot(x, y, c, r, reach) {
+    var i = nearestAngle(x, y, c), p = dotXY(i, c, r), dx = x - p.x, dy = y - p.y;
+    return Math.sqrt(dx * dx + dy * dy) <= reach ? i : -1;
+  }
+  /* Report items: two skills per angle, kept together by quadrant. */
+  function buildItems() {
+    var out = [];
+    ['Quadrant I', 'Quadrant II', 'Quadrant III', 'Quadrant IV', 'On the axes'].forEach(function (g) {
+      ['find', 'read'].forEach(function (skill) {
+        for (var i = 0; i < N; i++) {
+          if (groupOf(i) !== g) continue;
+          out.push({ key: skill + '_' + i, name: (skill === 'find' ? 'Find ' : 'Read ') + angText(i), group: g });
+        }
+      });
+    });
+    return out;
+  }
+  /*PURE-END*/
+
+  var VB = 340, C = 170, R = 150, NS = 'http://www.w3.org/2000/svg', FAST = 5000;
+  var findDeck, readDeck;
+
+  Kit.init({
+    prefix: 'uc',
+    items: buildItems(),
+    slowMs: FAST,
+    planDays: 5,
+    planMinutes: 5,
+    test: { name: 'blank circle', total: 16, goalMs: 300000 },
+    mastery: function () { return { done: findDeck.auto() + readDeck.auto(), total: 32 }; },
+    masteryLabel: 'Automatic now',
+    onShow: onShow
+  });
+  findDeck = Kit.deck({ id: 'find', n: N, fastMs: FAST });
+  readDeck = Kit.deck({ id: 'read', n: N, fastMs: FAST });
+  var showDeg = Kit.load('showDeg', true) !== false;
+
+  /* ---------- Shared drawing and helpers ---------- */
+  function svgEl(name, attrs, parent) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function frame(svg) {
+    svg.setAttribute('viewBox', '0 0 ' + VB + ' ' + VB);
+    svgEl('line', { 'class': 'axis', x1: 8, y1: C, x2: VB - 8, y2: C }, svg);
+    svgEl('line', { 'class': 'axis', x1: C, y1: 8, x2: C, y2: VB - 8 }, svg);
+    svgEl('circle', { 'class': 'ring', cx: C, cy: C, r: R }, svg);
+  }
+  function point(svg, e) {
+    var r = svg.getBoundingClientRect();
+    if (!r.width || !r.height) return null;
+    return { x: (e.clientX - r.left) * VB / r.width, y: (e.clientY - r.top) * VB / r.height };
+  }
+  /* A circle of 16 dots. onPick(i) is called for a tap near a dot or Enter/Space on a focused dot; pass null for a display-only circle. */
+  function makeCircle(svg, onPick, labelFn) {
+    frame(svg);
+    var dots = [];
+    ANG.forEach(function (a, i) {
+      var p = dotXY(i, C, R), q = dotXY(i, C, R - 34), attrs = { 'class': 'dot' };
+      if (onPick) { attrs.tabindex = '0'; attrs.role = 'button'; attrs['aria-label'] = labelFn(i); }
+      var g = svgEl('g', attrs, svg);
+      svgEl('circle', { 'class': 'halo', cx: p.x, cy: p.y, r: 15 }, g);
+      svgEl('circle', { 'class': 'pt', cx: p.x, cy: p.y, r: 9 }, g);
+      var t = svgEl('text', { 'class': 'lab', x: q.x, y: q.y, 'text-anchor': 'middle', 'dominant-baseline': 'central' }, g);
+      if (onPick) g.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(i); } });
+      dots.push({ g: g, t: t });
+    });
+    if (onPick) svg.addEventListener('click', function (e) {
+      var p = point(svg, e);
+      if (!p) return;
+      var i = hitDot(p.x, p.y, C, R, 50);
+      if (i >= 0) onPick(i);
+    });
+    return {
+      clear: function () { dots.forEach(function (d) { d.g.setAttribute('class', 'dot'); d.t.textContent = ''; }); },
+      mark: function (i, cls, label) { dots[i].g.setAttribute('class', 'dot ' + cls + (label ? ' show' : '')); dots[i].t.textContent = label || ''; }
+    };
+  }
+  function slot(k, hot) { var inner = k ? VAL[k].m : '<mi>?</mi>'; return hot ? '<mrow class="hl">' + inner + '</mrow>' : inner; }
+  function pairMath(a, b, hot, inline) {
+    return Kit.math('<mo>(</mo>' + slot(a, hot === 0) + '<mo>,</mo>' + slot(b, hot === 1) + '<mo>)</mo>', inline);
+  }
+  function degTag(el, i) { el.hidden = !showDeg; el.textContent = ANG[i].deg + '°'; }
+  function buildKeys(box, onPick) {
+    KEYS.forEach(function (k) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'key'; b.dataset.k = k;
+      b.setAttribute('aria-label', VAL[k].t);
+      b.innerHTML = Kit.math(VAL[k].m);
+      b.addEventListener('click', function () { onPick(k); });
+      box.appendChild(b);
+    });
+  }
+  function setKeys(box, on) { Array.prototype.forEach.call(box.querySelectorAll('.key'), function (b) { b.disabled = !on; }); }
+  function buildMini(box) {
+    var h = '';
+    for (var i = 0; i < N; i++) h += '<div><span class="lv" data-i="' + i + '"></span><span>' + angText(i) + '</span></div>';
+    box.innerHTML = h;
+  }
+  function paintSide(name, deck, cur, streak) {
+    Array.prototype.forEach.call($(name + '-mini').querySelectorAll('.lv'), function (el) {
+      var i = +el.dataset.i, lv = deck.levels[i];
+      el.className = 'lv' + (lv ? ' lv' + lv : '') + (i === cur ? ' now' : '');
+      el.setAttribute('role', 'img');
+      el.setAttribute('aria-label', angText(i) + ': level ' + lv + ' of 3');
+    });
+    $(name + '-auto').textContent = deck.auto();
+    $(name + '-streak').textContent = streak;
+  }
+  function armReset(btn, run) {
+    var armed = null;
+    btn.addEventListener('click', function () {
+      if (!armed) {
+        btn.textContent = 'Tap again to clear the grid';
+        armed = setTimeout(function () { armed = null; btn.textContent = 'Reset this grid'; }, 4000);
+        return;
+      }
+      clearTimeout(armed); armed = null; btn.textContent = 'Reset this grid';
+      run();
+    });
+  }
+  function timeNote(dt) {
+    var s = (dt / 1000).toFixed(1);
+    return dt > FAST ? '<b>Right, ' + s + ' s.</b> Under 5 seconds is what counts as automatic.' : '<b>Right, ' + s + ' s.</b>';
+  }
+
+  /* ---------- Find it ---------- */
+  var fs = { cur: -1, t0: 0, locked: false, timer: null, streak: 0 };
+  var findCircle = makeCircle($('find-svg'), findPick, function (i) { return 'Dot ' + (i + 1) + ' of 16, counting counter-clockwise from the right'; });
+  function findShow() {
+    clearTimeout(fs.timer);
+    fs.cur = findDeck.next(); fs.locked = false;
+    findCircle.clear();
+    $('find-circ').className = 'circ paper';
+    $('find-ang').innerHTML = Kit.math(angMath(fs.cur));
+    degTag($('find-deg'), fs.cur);
+    $('find-next').hidden = true;
+    paintSide('find', findDeck, fs.cur, fs.streak);
+    fs.t0 = performance.now();
+  }
+  function findPick(i) {
+    if (fs.locked || fs.cur < 0) return;
+    fs.locked = true;
+    var c = fs.cur, dt = performance.now() - fs.t0, ok = i === c, fb = $('find-fb');
+    findDeck.mark(c, ok, dt);
+    Kit.recAnswer('find_' + c, ok, dt);
+    if (ok) {
+      fs.streak++;
+      findCircle.mark(c, 'right', angText(c));
+      $('find-circ').className = 'circ paper ok';
+      fb.className = 'feedback good';
+      fb.innerHTML = timeNote(dt);
+      fs.timer = setTimeout(findShow, 800);
+    } else {
+      fs.streak = 0;
+      findCircle.mark(i, 'wrong', angText(i));
+      findCircle.mark(c, 'right', angText(c));
+      $('find-circ').className = 'circ paper no';
+      fb.className = 'feedback bad';
+      fb.innerHTML = '<b>That dot is ' + Kit.esc(angText(i)) + ', which is ' + ANG[i].deg + '°.</b> ' + Kit.esc(whereText(c)) + ' The green dot shows it.';
+      $('find-next').hidden = false; $('find-next').focus();
+    }
+    paintSide('find', findDeck, c, fs.streak);
+  }
+  $('find-next').addEventListener('click', function () {
+    $('find-fb').className = 'feedback'; $('find-fb').textContent = '';
+    findShow();
+  });
+  armReset($('find-reset'), function () {
+    findDeck.reset(); fs.streak = 0;
+    $('find-fb').className = 'feedback'; $('find-fb').textContent = 'Grid cleared. The report keeps its history.';
+    findShow();
+  });
+  $('show-deg').checked = showDeg;
+  $('show-deg').addEventListener('change', function () {
+    showDeg = $('show-deg').checked; Kit.save('showDeg', showDeg);
+    if (fs.cur >= 0) degTag($('find-deg'), fs.cur);
+    if (rs.cur >= 0) degTag($('read-deg'), rs.cur);
+  });
+
+  /* ---------- Read it ---------- */
+  var rs = { cur: -1, step: 0, pick: [null, null], t0: 0, locked: false, timer: null, streak: 0 };
+  var readCircle = makeCircle($('read-svg'), null, null), readKeys = $('read-keys');
+  function readAsk() {
+    $('read-ask').textContent = rs.locked ? '' : rs.step === 0 ? 'First cos, the x value.' : 'Now sin, the y value.';
+    $('read-pair').innerHTML = pairMath(rs.pick[0], rs.pick[1], rs.locked ? -1 : rs.step);
+  }
+  function readShow() {
+    clearTimeout(rs.timer);
+    rs.cur = readDeck.next(); rs.step = 0; rs.pick = [null, null]; rs.locked = false;
+    readCircle.clear();
+    readCircle.mark(rs.cur, 'on', '');
+    $('read-circ').className = 'circ sm paper still';
+    $('read-ang').innerHTML = Kit.math(angMath(rs.cur));
+    degTag($('read-deg'), rs.cur);
+    $('read-next').hidden = true;
+    setKeys(readKeys, true);
+    readAsk();
+    paintSide('read', readDeck, rs.cur, rs.streak);
+    rs.t0 = performance.now();
+  }
+  function readPick(k) {
+    if (rs.locked || rs.cur < 0) return;
+    rs.pick[rs.step] = k;
+    if (rs.step === 0) { rs.step = 1; readAsk(); return; }
+    rs.locked = true;
+    var c = rs.cur, dt = performance.now() - rs.t0, fb = $('read-fb');
+    var ck = cosKey(c), sk = sinKey(c), ok = rs.pick[0] === ck && rs.pick[1] === sk;
+    var given = '(' + VAL[rs.pick[0]].t + ', ' + VAL[rs.pick[1]].t + ')';
+    readDeck.mark(c, ok, dt);
+    Kit.recAnswer('read_' + c, ok, dt);
+    setKeys(readKeys, false);
+    rs.pick = [ck, sk];
+    readAsk();
+    if (ok) {
+      rs.streak++;
+      readCircle.mark(c, 'right', '');
+      $('read-circ').className = 'circ sm paper still ok';
+      fb.className = 'feedback good';
+      fb.innerHTML = timeNote(dt);
+      rs.timer = setTimeout(readShow, 800);
+    } else {
+      rs.streak = 0;
+      readCircle.mark(c, 'wrong', '');
+      $('read-circ').className = 'circ sm paper still no';
+      fb.className = 'feedback bad';
+      fb.innerHTML = '<b>Not ' + Kit.esc(given) + '.</b> ' + Kit.esc(explainRead(c));
+      $('read-next').hidden = false; $('read-next').focus();
+    }
+    paintSide('read', readDeck, c, rs.streak);
+  }
+  $('read-next').addEventListener('click', function () {
+    $('read-fb').className = 'feedback'; $('read-fb').textContent = '';
+    readShow();
+  });
+  armReset($('read-reset'), function () {
+    readDeck.reset(); rs.streak = 0;
+    $('read-fb').className = 'feedback'; $('read-fb').textContent = 'Grid cleared. The report keeps its history.';
+    readShow();
+  });
+
+  /* ---------- Blank circle (timed test) ---------- */
+  var bs = { pairs: [], per: [], sel: 0, step: 0, t0: null, ms: 0, tick: null, done: false, jump: false, selAt: 0 };
+  var best = Kit.load('best', null);
+  if (typeof best !== 'number' || !(best > 0)) best = null;
+  var blankKeys = $('blank-keys');
+  var B_HINT = 'Give cos then sin for every point, from memory. The clock starts on your first answer. Tap a point in the list to change it.';
+  var blankCircle = makeCircle($('blank-svg'), blankSelect, function (i) { return 'Point at ' + angText(i); });
+
+  function complete(i) { return bs.pairs[i][0] !== null && bs.pairs[i][1] !== null; }
+  function openPoints() { var e = []; for (var i = 0; i < N; i++) if (!complete(i)) e.push(i); return e; }
+  function nextOpen() {
+    var e = openPoints();
+    if (!e.length) return -1;
+    if (bs.jump) return Kit.pickOne(e);
+    for (var i = 0; i < e.length; i++) if (e[i] > bs.sel) return e[i];
+    return e[0];
+  }
+  function buildChips() {
+    var box = $('blank-chips');
+    for (var i = 0; i < N; i++) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip'; b.dataset.i = i;
+      box.appendChild(b);
+      (function (n) { b.addEventListener('click', function () { blankSelect(n); }); })(i);
+    }
+  }
+  function blankPaint() {
+    var i, score = 0;
+    blankCircle.clear();
+    Array.prototype.forEach.call($('blank-chips').querySelectorAll('.chip'), function (b) {
+      var n = +b.dataset.i, p = bs.pairs[n], cls = 'chip', mk = '', label = angText(n) + ': ';
+      if (bs.done) {
+        var ok = p[0] === cosKey(n) && p[1] === sinKey(n);
+        cls += ok ? ' right' : ' wrong';
+        mk = '<span class="mk">' + (ok ? '✓' : '✕') + '</span>';
+        b.innerHTML = '<span>' + Kit.math(angMath(n), true) + '</span><span>' + pairMath(cosKey(n), sinKey(n), -1, true) + '</span>' + mk;
+        b.disabled = true;
+        label += (ok ? 'correct, ' : 'wrong, the point is ') + pairText(n);
+        blankCircle.mark(n, ok ? 'right' : 'wrong', '');
+        if (ok) score++;
+      } else {
+        if (n === bs.sel) cls += ' sel';
+        b.innerHTML = '<span>' + Kit.math(angMath(n), true) + '</span><span>' + pairMath(p[0], p[1], -1, true) + '</span>';
+        b.disabled = false;
+        label += complete(n) ? '(' + VAL[p[0]].t + ', ' + VAL[p[1]].t + ')' : 'not filled in';
+        blankCircle.mark(n, n === bs.sel ? 'on' : complete(n) ? 'filled' : '', '');
+      }
+      b.className = cls;
+      b.setAttribute('aria-label', label);
+    });
+    i = bs.sel;
+    $('blank-ang').innerHTML = Kit.math(angMath(i));
+    $('blank-pair').innerHTML = bs.done ? pairMath(cosKey(i), sinKey(i), -1) : pairMath(bs.pairs[i][0], bs.pairs[i][1], bs.step);
+    setKeys(blankKeys, !bs.done);
+    $('blank-check').disabled = bs.done || openPoints().length > 0;
+    $('blank-best').textContent = best ? Kit.fmt(best) : 'none yet';
+    return score;
+  }
+  function blankClock() { if (bs.t0 !== null && !bs.done) { bs.ms = performance.now() - bs.t0; $('blank-clock').textContent = Kit.fmt(bs.ms); } }
+  function blankReset() {
+    clearInterval(bs.tick);
+    bs.pairs = []; bs.per = [];
+    for (var i = 0; i < N; i++) { bs.pairs.push([null, null]); bs.per.push(0); }
+    bs.t0 = null; bs.ms = 0; bs.tick = null; bs.done = false; bs.step = 0;
+    bs.sel = bs.jump ? Math.floor(Math.random() * N) : 0;
+    $('blank-clock').textContent = '0:00.0';
+    $('blank-circ').className = 'circ sm paper';
+    $('blank-fb').className = 'feedback'; $('blank-fb').textContent = B_HINT;
+    blankPaint();
+  }
+  function blankSelect(i) {
+    if (bs.done) return;
+    bs.sel = i;
+    bs.step = (bs.pairs[i][0] !== null && bs.pairs[i][1] === null) ? 1 : 0;
+    bs.selAt = performance.now();
+    blankPaint();
+  }
+  function blankPick(k) {
+    if (bs.done) return;
+    var now = performance.now();
+    if (bs.t0 === null) { bs.t0 = now; bs.selAt = now; bs.tick = setInterval(blankClock, 100); }
+    if (bs.step === 0) { bs.pairs[bs.sel] = [k, null]; bs.step = 1; blankPaint(); return; }
+    bs.pairs[bs.sel][1] = k;
+    bs.per[bs.sel] += now - bs.selAt;
+    var n = nextOpen();
+    if (n >= 0) bs.sel = n;
+    bs.step = 0; bs.selAt = now;
+    blankPaint();
+    if (n < 0) $('blank-check').focus();
+  }
+  function blankCheck() {
+    if (bs.done || openPoints().length) return;
+    blankClock(); clearInterval(bs.tick); bs.done = true;
+    var score = blankPaint(), r = $('blank-fb'), time = Kit.fmt(bs.ms), miss = N - score, i;
+    Kit.recTest(score, N, bs.ms);
+    for (i = 0; i < N; i++) Kit.recAnswer('read_' + i, bs.pairs[i][0] === cosKey(i) && bs.pairs[i][1] === sinKey(i), bs.per[i]);
+    if (score === N) {
+      var goal = bs.ms < 300000 ? ' Goal met.' : ' The goal is under 5:00.';
+      r.className = 'feedback good';
+      if (best === null || bs.ms < best) {
+        best = Math.round(bs.ms); Kit.save('best', best);
+        r.innerHTML = '<b>16 of 16 in ' + time + '. New best.</b>' + goal;
+      } else {
+        r.innerHTML = '<b>16 of 16 in ' + time + '.</b> Your best is ' + Kit.fmt(best) + '.' + goal;
+      }
+      $('blank-best').textContent = Kit.fmt(best);
+      $('blank-circ').className = 'circ sm paper ok';
+    } else {
+      r.className = 'feedback bad';
+      r.innerHTML = '<b>' + score + ' of 16 in ' + time + '.</b> The ' + (miss === 1 ? 'point marked ✕ now shows' : miss + ' points marked ✕ now show') + ' the right pair. Start over and go again.';
+      $('blank-circ').className = 'circ sm paper no';
+    }
+    $('blank-again').focus();
+  }
+  $('blank-check').addEventListener('click', blankCheck);
+  $('blank-again').addEventListener('click', blankReset);
+  $('blank-jump').addEventListener('change', function () { bs.jump = $('blank-jump').checked; blankReset(); });
+
+  /* ---------- See it ---------- */
+  var es = { i: 1, drag: false }, see = {};
+  function buildSee() {
+    var svg = $('see-svg'), i;
+    frame(svg);
+    for (i = 0; i < N; i++) { var p = dotXY(i, C, R); svgEl('circle', { 'class': 'tickdot', cx: p.x, cy: p.y, r: 4 }, svg); }
+    see.cos = svgEl('line', { 'class': 'seg-cos' }, svg);
+    see.sin = svgEl('line', { 'class': 'seg-sin' }, svg);
+    see.rad = svgEl('line', { 'class': 'seg-r' }, svg);
+    see.cosLab = svgEl('text', { 'class': 'slab c', 'text-anchor': 'middle' }, svg);
+    see.sinLab = svgEl('text', { 'class': 'slab s', 'dominant-baseline': 'central' }, svg);
+    see.pt = svgEl('circle', { 'class': 'see-pt', r: 11 }, svg);
+    function move(e) { var p = point(svg, e); if (p) seeSet(nearestAngle(p.x, p.y, C)); }
+    svg.addEventListener('pointerdown', function (e) { es.drag = true; try { svg.setPointerCapture(e.pointerId); } catch (x) {} move(e); });
+    svg.addEventListener('pointermove', function (e) { if (es.drag) move(e); });
+    svg.addEventListener('pointerup', function () { es.drag = false; });
+    svg.addEventListener('pointercancel', function () { es.drag = false; });
+    svg.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); seeSet((es.i + 1) % N); }
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); seeSet((es.i + N - 1) % N); }
+    });
+    $('see-prev').addEventListener('click', function () { seeSet((es.i + N - 1) % N); });
+    $('see-next').addEventListener('click', function () { seeSet((es.i + 1) % N); });
+  }
+  function line(el, x1, y1, x2, y2) { el.setAttribute('x1', x1); el.setAttribute('y1', y1); el.setAttribute('x2', x2); el.setAttribute('y2', y2); }
+  function signWord(s) { return s > 0 ? 'positive' : s < 0 ? 'negative' : 'zero'; }
+  function seeSet(i) {
+    if (i === es.i && see.drawn) return;
+    es.i = i; see.drawn = true;
+    var a = ANG[i], p = dotXY(i, C, R), s = signs(a.deg), q = quadrant(a.deg), tn = tanOf(i);
+    line(see.rad, C, C, p.x, p.y);
+    line(see.cos, C, C, p.x, C);
+    line(see.sin, p.x, C, p.x, p.y);
+    see.pt.setAttribute('cx', p.x); see.pt.setAttribute('cy', p.y);
+    see.cosLab.textContent = s.cos === 0 ? '' : 'cos';
+    see.cosLab.setAttribute('x', (C + p.x) / 2);
+    see.cosLab.setAttribute('y', s.sin >= 0 ? C + 20 : C - 10);
+    see.sinLab.textContent = s.sin === 0 ? '' : 'sin';
+    see.sinLab.setAttribute('x', p.x + (s.cos >= 0 ? -10 : 10));
+    see.sinLab.setAttribute('text-anchor', s.cos >= 0 ? 'end' : 'start');
+    see.sinLab.setAttribute('y', (C + p.y) / 2);
+    $('see-ang').innerHTML = Kit.math(angMath(i)) + ' <span class="tag">' + a.deg + '°</span>';
+    $('see-point').innerHTML = pairMath(cosKey(i), sinKey(i), -1);
+    $('see-cos').innerHTML = Kit.math(VAL[cosKey(i)].m);
+    $('see-sin').innerHTML = Kit.math(VAL[sinKey(i)].m);
+    $('see-tan').innerHTML = tn.v === null ? '<span class="undef">undefined</span>' : Kit.math(tn.m);
+    $('see-where').textContent = whereText(i);
+    var tanSign = tn.v === null ? 'undefined' : signWord(tn.v);
+    $('see-signs').innerHTML =
+      '<span class="sg' + (s.sin > 0 ? ' pos' : '') + '">sin is ' + signWord(s.sin) + '</span>' +
+      '<span class="sg' + (s.cos > 0 ? ' pos' : '') + '">cos is ' + signWord(s.cos) + '</span>' +
+      '<span class="sg' + (tn.v !== null && tn.v > 0 ? ' pos' : '') + '">tan is ' + tanSign + '</span>';
+    $('see-why').textContent = q === 0
+      ? (tn.v === null ? 'Here x is 0. Tan is y ÷ x, and you cannot divide by 0, so tan is undefined.' : 'Here y is 0, so sin is 0 and tan is 0 too.')
+      : signRule(q) + ' Tan is y ÷ x, so it is ' + (tn.v > 0 ? 'positive when the two signs match.' : 'negative when the two signs differ.');
+    $('see-svg').setAttribute('aria-valuetext', angText(i) + ', point ' + pairText(i));
+  }
+
+  /* ---------- Tabs and keys ---------- */
+  function onShow(v) {
+    if (v === 'find') { if (fs.cur < 0) findShow(); else if (!fs.locked) fs.t0 = performance.now(); }
+    if (v === 'read') { if (rs.cur < 0) readShow(); else if (!rs.locked) rs.t0 = performance.now(); }
+    if (v === 'see') seeSet(es.i);
+  }
+  Kit.digitKeys(function (v) { return v === 'read' ? readKeys : v === 'blank' ? blankKeys : null; });
+
+  /* ---------- Boot ---------- */
+  buildMini($('find-mini'));
+  buildMini($('read-mini'));
+  buildKeys(readKeys, readPick);
+  buildKeys(blankKeys, blankPick);
+  buildChips();
+  buildSee();
+  blankReset();
+  Kit.start();
+})();
+</script>

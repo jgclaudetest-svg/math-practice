@@ -1,0 +1,563 @@
+<title>Identity Builder</title>
+<style>
+  /* Page layout: recall drill with a progress side panel; derivations as a single column of lines you put in order. */
+  .seg button { min-height: 44px; }
+  .prompt { overflow-x: auto; max-width: 100%; padding: 4px 2px; }
+  .opts { --cols: 1; }
+  @media (min-width: 620px) { .opts { --cols: 2; } }
+  .opts .key { min-height: 66px; font-size: 1.05rem; }
+  .picks { --cols: 1; }
+  .picks .key { min-height: 60px; font-size: 1.02rem; justify-content: flex-start; padding: 8px 12px; overflow-x: auto; }
+
+  .fam { display: flex; flex-direction: column; gap: 4px; }
+  .fam .l { font-size: .75rem; color: var(--muted); }
+  .sw { display: flex; flex-wrap: wrap; gap: 4px; }
+  .sw .lv { width: 26px; height: 18px; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { background: var(--surface); border: 1.5px solid var(--line); border-radius: 99px; padding: 9px 14px; min-height: 44px; font-size: .9rem; font-weight: 500; }
+  .chip:hover { border-color: var(--accent); }
+  .chip[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .chip.done::before { content: "\2713\00a0"; color: var(--good); font-weight: 700; }
+
+  .dgoal { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; font-size: 1.2rem; overflow-x: auto; }
+  .built { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .built li { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 2px 10px; align-items: start; }
+  .built .num { grid-row: span 2; font-family: var(--font-display); font-weight: 700; font-size: .85rem; color: var(--muted); padding-top: 2px; font-variant-numeric: tabular-nums; }
+  .built .why { font-size: .88rem; color: var(--muted); }
+  .built .line { font-size: 1.08rem; overflow-x: auto; padding: 3px 0; }
+  .ask { font-size: .9rem; font-weight: 600; margin: 0; }
+
+  .frow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .frow:last-child { border-bottom: 0; }
+  .frow .f { font-size: 1.1rem; overflow-x: auto; max-width: 100%; min-width: 0; padding: 2px 0; }
+  .badge { font-size: .68rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+  .badge.mem { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); color: var(--accent); }
+  .badge.reb { background: var(--warn-bg); color: var(--warn); }
+  .flist { display: flex; flex-direction: column; max-width: 640px; }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <h1>Identity Builder</h1>
+    <p>The trig formulas to know by heart, and how to rebuild each one if you forget it.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" id="tab-recall" data-view="recall" aria-selected="true">Recall</button>
+    <button class="tab" role="tab" id="tab-derive" data-view="derive" aria-selected="false">Derive</button>
+    <button class="tab" role="tab" id="tab-sheet" data-view="sheet" aria-selected="false">Sheet</button>
+    <button class="tab" role="tab" id="tab-report" data-view="report" aria-selected="false">Report</button>
+  </nav>
+
+  <!-- Recall -->
+  <section id="view-recall" role="tabpanel" aria-labelledby="tab-recall">
+    <div class="work">
+      <div class="main">
+        <div class="seg" id="famseg" role="group" aria-label="Which formulas to practice"></div>
+        <div class="stage" id="stage">
+          <div class="prompt" id="prompt" aria-live="polite"></div>
+          <div class="tag" id="famtag"></div>
+        </div>
+        <div class="feedback" id="feedback" aria-live="polite">Pick the right side of the formula. Keys 1 to 4 work too.</div>
+        <div class="keypad opts" id="opts"></div>
+        <button class="primary" id="next" hidden>Next formula</button>
+      </div>
+      <aside class="side" aria-label="Progress">
+        <div class="stats">
+          <div class="stat"><span class="n"><span id="solid">0</span><small id="solidof"></small></span><span class="l">Solid</span></div>
+          <div class="stat"><span class="n" id="streak">0</span><span class="l">Streak</span></div>
+        </div>
+        <div id="mgrid" class="side"></div>
+        <div class="legend"><span>New</span><span class="lv"></span><span class="lv lv1"></span><span class="lv lv2"></span><span class="lv lv3"></span><span>Solid</span></div>
+        <p class="note">A formula turns solid after three right answers in a row, the last one in under 8 seconds. A miss sends it back to new and brings it up again two cards later.</p>
+        <button class="link" id="reset">Reset this grid</button>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Derive -->
+  <section id="view-derive" role="tabpanel" aria-labelledby="tab-derive" hidden>
+    <div class="main">
+      <p class="note">Each formula below can be built from one you already know. Tap the lines in the order you would write them.</p>
+      <div class="chips" id="dchips" role="group" aria-label="Which derivation"></div>
+      <div class="panel paper dgoal"><span class="tag">Goal</span><div id="dgoal"></div></div>
+      <ol class="built" id="built"></ol>
+      <p class="ask" id="dask">Tap the line that comes next.</p>
+      <div class="keypad picks" id="tiles"></div>
+      <div class="feedback" id="dfeedback" aria-live="polite"></div>
+      <div class="row">
+        <button class="primary" id="dnext" hidden>Next derivation</button>
+        <button class="ghost" id="dagain">Start this one over</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sheet -->
+  <section id="view-sheet" role="tabpanel" aria-labelledby="tab-sheet" hidden>
+    <div class="prose" id="sheet"></div>
+  </section>
+
+  <section id="view-report" role="tabpanel" aria-labelledby="tab-report" hidden></section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = Kit.$;
+
+  /*PURE-START*/
+  /* MathML string builders (no DOM). */
+  var SP = '<mspace width="0.2em"></mspace>';
+  function mn(s) { return '<mn>' + s + '</mn>'; }
+  function mi(s) { return '<mi>' + s + '</mi>'; }
+  function mo(s) { return '<mo>' + s + '</mo>'; }
+  function row(a) { return '<mrow>' + a + '</mrow>'; }
+  function frac(a, b) { return '<mfrac>' + row(a) + row(b) + '</mfrac>'; }
+  function root(a) { return '<msqrt>' + a + '</msqrt>'; }
+  function sup(a, b) { return '<msup>' + row(a) + row(b) + '</msup>'; }
+  function par(a) { return row(mo('(') + a + mo(')')); }
+  function fn(name, arg) { return row(mi(name) + SP + arg); }                              /* sin x   */
+  function fn2(name, arg) { return row('<msup>' + mi(name) + mn('2') + '</msup>' + SP + arg); } /* sin² x  */
+  function fnp(name, inner) { return row(mi(name) + par(inner)); }                         /* sin(x + y) */
+  function times(a, b) { return row(a + SP + b); }
+
+  var TH = mi('θ'), X = mi('x'), Y = mi('y'), A = mi('A'), ONE = mn('1'), TWO = mn('2');
+  var PLUS = mo('+'), MINUS = mo('−'), EQ = mo('='), PM = mo('±');
+  var HALF = frac(A, TWO);
+  var sT = fn('sin', TH), cT = fn('cos', TH), tT = fn('tan', TH);
+  var s2T = fn2('sin', TH), c2T = fn2('cos', TH), t2T = fn2('tan', TH), ct2T = fn2('cot', TH), se2T = fn2('sec', TH), cs2T = fn2('csc', TH);
+  var sx = fn('sin', X), cx = fn('cos', X), sy = fn('sin', Y), cy = fn('cos', Y), tx = fn('tan', X), ty = fn('tan', Y);
+  var s2x = fn2('sin', X), c2x = fn2('cos', X);
+  var sA = fn('sin', A), cA = fn('cos', A);
+  var XX = fnp('cos', X + PLUS + X);                    /* cos(x + x), used only inside the half-angle derivations */
+  var tanXY = fnp('tan', X + PLUS + Y);
+
+  var sin = Math.sin, cos = Math.cos, tan = Math.tan, sqrt = Math.sqrt;
+  function sq(z) { return z * z; }
+  function opt(m, ev) { return { m: m, ev: ev }; }
+
+  var FAMS = ['Reciprocal and quotient', 'Pythagorean', 'Sum and difference', 'Half-angle'];
+  var FAM_SHORT = ['Reciprocal', 'Pythagorean', 'Sum, difference', 'Half-angle'];
+
+  /* Each formula: lhs display, L = numeric left side, right = correct right sides, wrong = classic slips.
+     mem: true = memorize it, false = rebuild it from another one. */
+  var FORMULAS = [
+    { key: 'r_csc', fam: 0, name: 'csc θ', mem: true, lhs: fn('csc', TH), L: function (v) { return 1 / sin(v.t); },
+      right: [opt(frac(ONE, sT), function (v) { return 1 / sin(v.t); })],
+      wrong: [opt(frac(ONE, cT), function (v) { return 1 / cos(v.t); }), opt(frac(ONE, tT), function (v) { return 1 / tan(v.t); }), opt(frac(sT, cT), function (v) { return sin(v.t) / cos(v.t); })],
+      hook: 'csc is 1 over sin. The first letters cross over: cosecant goes with sine, and secant goes with cosine.' },
+    { key: 'r_sec', fam: 0, name: 'sec θ', mem: true, lhs: fn('sec', TH), L: function (v) { return 1 / cos(v.t); },
+      right: [opt(frac(ONE, cT), function (v) { return 1 / cos(v.t); })],
+      wrong: [opt(frac(ONE, sT), function (v) { return 1 / sin(v.t); }), opt(frac(ONE, tT), function (v) { return 1 / tan(v.t); }), opt(frac(cT, sT), function (v) { return cos(v.t) / sin(v.t); })],
+      hook: 'sec is 1 over cos. The first letters cross over: secant goes with cosine, and cosecant goes with sine.' },
+    { key: 'r_cot', fam: 0, name: 'cot θ', mem: true, lhs: fn('cot', TH), L: function (v) { return 1 / tan(v.t); },
+      right: [opt(frac(ONE, tT), function (v) { return 1 / tan(v.t); })],
+      wrong: [opt(frac(ONE, sT), function (v) { return 1 / sin(v.t); }), opt(frac(ONE, cT), function (v) { return 1 / cos(v.t); }), opt(frac(sT, cT), function (v) { return sin(v.t) / cos(v.t); })],
+      hook: 'cot is tan flipped over. That makes it 1 over tan, which is also cos over sin.' },
+    { key: 'q_tan', fam: 0, name: 'tan θ as a quotient', mem: true, lhs: tT, L: function (v) { return tan(v.t); },
+      right: [opt(frac(sT, cT), function (v) { return sin(v.t) / cos(v.t); })],
+      wrong: [opt(frac(cT, sT), function (v) { return cos(v.t) / sin(v.t); }), opt(frac(ONE, cT), function (v) { return 1 / cos(v.t); }), opt(frac(ONE, sT), function (v) { return 1 / sin(v.t); })],
+      hook: 'Tangent is sine over cosine. On the unit circle that is y over x, the slope of the line to the point.' },
+
+    { key: 'p_sc', fam: 1, name: 'sin² θ + cos² θ', mem: true, lhs: row(s2T + PLUS + c2T), L: function (v) { return sq(sin(v.t)) + sq(cos(v.t)); },
+      right: [opt(ONE, function () { return 1; })],
+      wrong: [opt(mn('0'), function () { return 0; }), opt(t2T, function (v) { return sq(tan(v.t)); }), opt(se2T, function (v) { return 1 / sq(cos(v.t)); })],
+      hook: 'On the unit circle x² + y² = 1. Cosine is x and sine is y, so the two squares always add to 1.' },
+    { key: 'p_ts', fam: 1, name: '1 + tan² θ', mem: false, lhs: row(ONE + PLUS + t2T), L: function (v) { return 1 + sq(tan(v.t)); },
+      right: [opt(se2T, function (v) { return 1 / sq(cos(v.t)); })],
+      wrong: [opt(cs2T, function (v) { return 1 / sq(sin(v.t)); }), opt(ct2T, function (v) { return 1 / sq(tan(v.t)); }), opt(c2T, function (v) { return sq(cos(v.t)); })],
+      hook: 'Divide sin² + cos² = 1 by cos². tan and sec are the two with cos on the bottom, so they stay together.' },
+    { key: 'p_cc', fam: 1, name: '1 + cot² θ', mem: false, lhs: row(ONE + PLUS + ct2T), L: function (v) { return 1 + 1 / sq(tan(v.t)); },
+      right: [opt(cs2T, function (v) { return 1 / sq(sin(v.t)); })],
+      wrong: [opt(se2T, function (v) { return 1 / sq(cos(v.t)); }), opt(t2T, function (v) { return sq(tan(v.t)); }), opt(s2T, function (v) { return sq(sin(v.t)); })],
+      hook: 'Divide sin² + cos² = 1 by sin². cot and csc are the two with sin on the bottom, so they stay together.' },
+
+    { key: 's_sin_p', fam: 2, name: 'sin(x + y)', mem: true, lhs: fnp('sin', X + PLUS + Y), L: function (v) { return sin(v.x + v.y); },
+      right: [opt(row(times(sx, cy) + PLUS + times(cx, sy)), function (v) { return sin(v.x) * cos(v.y) + cos(v.x) * sin(v.y); })],
+      wrong: [opt(row(times(sx, cy) + MINUS + times(cx, sy)), function (v) { return sin(v.x) * cos(v.y) - cos(v.x) * sin(v.y); }),
+              opt(row(times(cx, cy) + MINUS + times(sx, sy)), function (v) { return cos(v.x) * cos(v.y) - sin(v.x) * sin(v.y); }),
+              opt(row(sx + PLUS + sy), function (v) { return sin(v.x) + sin(v.y); })],
+      hook: 'Sine mixes the two: sin cos, then cos sin. It keeps the sign you see, so a plus stays a plus.' },
+    { key: 's_sin_m', fam: 2, name: 'sin(x − y)', mem: true, lhs: fnp('sin', X + MINUS + Y), L: function (v) { return sin(v.x - v.y); },
+      right: [opt(row(times(sx, cy) + MINUS + times(cx, sy)), function (v) { return sin(v.x) * cos(v.y) - cos(v.x) * sin(v.y); })],
+      wrong: [opt(row(times(sx, cy) + PLUS + times(cx, sy)), function (v) { return sin(v.x) * cos(v.y) + cos(v.x) * sin(v.y); }),
+              opt(row(times(cx, cy) + PLUS + times(sx, sy)), function (v) { return cos(v.x) * cos(v.y) + sin(v.x) * sin(v.y); }),
+              opt(row(sx + MINUS + sy), function (v) { return sin(v.x) - sin(v.y); })],
+      hook: 'Sine mixes the two: sin cos, then cos sin. It keeps the sign you see, so a minus stays a minus.' },
+    { key: 's_cos_p', fam: 2, name: 'cos(x + y)', mem: true, lhs: fnp('cos', X + PLUS + Y), L: function (v) { return cos(v.x + v.y); },
+      right: [opt(row(times(cx, cy) + MINUS + times(sx, sy)), function (v) { return cos(v.x) * cos(v.y) - sin(v.x) * sin(v.y); })],
+      wrong: [opt(row(times(cx, cy) + PLUS + times(sx, sy)), function (v) { return cos(v.x) * cos(v.y) + sin(v.x) * sin(v.y); }),
+              opt(row(times(sx, cy) + PLUS + times(cx, sy)), function (v) { return sin(v.x) * cos(v.y) + cos(v.x) * sin(v.y); }),
+              opt(row(cx + PLUS + cy), function (v) { return cos(v.x) + cos(v.y); })],
+      hook: 'Cosine keeps its own kind together: cos cos, then sin sin. It flips the sign, so a plus becomes a minus.' },
+    { key: 's_cos_m', fam: 2, name: 'cos(x − y)', mem: true, lhs: fnp('cos', X + MINUS + Y), L: function (v) { return cos(v.x - v.y); },
+      right: [opt(row(times(cx, cy) + PLUS + times(sx, sy)), function (v) { return cos(v.x) * cos(v.y) + sin(v.x) * sin(v.y); })],
+      wrong: [opt(row(times(cx, cy) + MINUS + times(sx, sy)), function (v) { return cos(v.x) * cos(v.y) - sin(v.x) * sin(v.y); }),
+              opt(row(times(sx, cy) + MINUS + times(cx, sy)), function (v) { return sin(v.x) * cos(v.y) - cos(v.x) * sin(v.y); }),
+              opt(row(cx + MINUS + cy), function (v) { return cos(v.x) - cos(v.y); })],
+      hook: 'Cosine keeps its own kind together: cos cos, then sin sin. It flips the sign, so a minus becomes a plus.' },
+    { key: 's_tan_p', fam: 2, name: 'tan(x + y)', mem: false, lhs: tanXY, L: function (v) { return tan(v.x + v.y); },
+      right: [opt(frac(tx + PLUS + ty, ONE + MINUS + times(tx, ty)), function (v) { return (tan(v.x) + tan(v.y)) / (1 - tan(v.x) * tan(v.y)); })],
+      wrong: [opt(frac(tx + PLUS + ty, ONE + PLUS + times(tx, ty)), function (v) { return (tan(v.x) + tan(v.y)) / (1 + tan(v.x) * tan(v.y)); }),
+              opt(frac(tx + MINUS + ty, ONE + MINUS + times(tx, ty)), function (v) { return (tan(v.x) - tan(v.y)) / (1 - tan(v.x) * tan(v.y)); }),
+              opt(row(tx + PLUS + ty), function (v) { return tan(v.x) + tan(v.y); })],
+      hook: 'The top keeps the sign and the bottom flips it. For a sum, the top is tan plus tan and the bottom is 1 minus tan tan.' },
+    { key: 's_tan_m', fam: 2, name: 'tan(x − y)', mem: false, lhs: fnp('tan', X + MINUS + Y), L: function (v) { return tan(v.x - v.y); },
+      right: [opt(frac(tx + MINUS + ty, ONE + PLUS + times(tx, ty)), function (v) { return (tan(v.x) - tan(v.y)) / (1 + tan(v.x) * tan(v.y)); })],
+      wrong: [opt(frac(tx + MINUS + ty, ONE + MINUS + times(tx, ty)), function (v) { return (tan(v.x) - tan(v.y)) / (1 - tan(v.x) * tan(v.y)); }),
+              opt(frac(tx + PLUS + ty, ONE + PLUS + times(tx, ty)), function (v) { return (tan(v.x) + tan(v.y)) / (1 + tan(v.x) * tan(v.y)); }),
+              opt(row(tx + MINUS + ty), function (v) { return tan(v.x) - tan(v.y); })],
+      hook: 'The top keeps the sign and the bottom flips it. For a difference, the top is tan minus tan and the bottom is 1 plus tan tan.' },
+
+    { key: 'h_sin', fam: 3, name: 'sin(A/2)', mem: true, lhs: fn('sin', HALF), L: function (v) { return sin(v.A / 2); },
+      right: [opt(row(PM + root(frac(ONE + MINUS + cA, TWO))), function (v) { return sqrt((1 - cos(v.A)) / 2); })],
+      wrong: [opt(row(PM + root(frac(ONE + PLUS + cA, TWO))), function (v) { return sqrt((1 + cos(v.A)) / 2); }),
+              opt(row(PM + root(frac(ONE + MINUS + cA, ONE + PLUS + cA))), function (v) { return sqrt((1 - cos(v.A)) / (1 + cos(v.A))); }),
+              opt(frac(ONE + MINUS + cA, TWO), function (v) { return (1 - cos(v.A)) / 2; })],
+      hook: 'Sine takes the minus: 1 minus cos A, over 2, all under the root. The quadrant of A/2 picks the sign.' },
+    { key: 'h_cos', fam: 3, name: 'cos(A/2)', mem: true, lhs: fn('cos', HALF), L: function (v) { return cos(v.A / 2); },
+      right: [opt(row(PM + root(frac(ONE + PLUS + cA, TWO))), function (v) { return sqrt((1 + cos(v.A)) / 2); })],
+      wrong: [opt(row(PM + root(frac(ONE + MINUS + cA, TWO))), function (v) { return sqrt((1 - cos(v.A)) / 2); }),
+              opt(row(PM + root(frac(ONE + PLUS + cA, ONE + MINUS + cA))), function (v) { return sqrt((1 + cos(v.A)) / (1 - cos(v.A))); }),
+              opt(frac(ONE + PLUS + cA, TWO), function (v) { return (1 + cos(v.A)) / 2; })],
+      hook: 'Cosine takes the plus: 1 plus cos A, over 2, all under the root. The quadrant of A/2 picks the sign.' },
+    { key: 'h_tan_root', fam: 3, name: 'tan(A/2) with a root', mem: false, ask: 'with a square root', lhs: fn('tan', HALF), L: function (v) { return tan(v.A / 2); },
+      right: [opt(row(PM + root(frac(ONE + MINUS + cA, ONE + PLUS + cA))), function (v) { return sqrt((1 - cos(v.A)) / (1 + cos(v.A))); })],
+      wrong: [opt(row(PM + root(frac(ONE + PLUS + cA, ONE + MINUS + cA))), function (v) { return sqrt((1 + cos(v.A)) / (1 - cos(v.A))); }),
+              opt(row(PM + root(frac(ONE + MINUS + cA, TWO))), function (v) { return sqrt((1 - cos(v.A)) / 2); }),
+              opt(frac(ONE + MINUS + cA, ONE + PLUS + cA), function (v) { return (1 - cos(v.A)) / (1 + cos(v.A)); })],
+      hook: 'It is half-angle sine over half-angle cosine. The 2s cancel, which leaves 1 minus cos A over 1 plus cos A under the root.' },
+    { key: 'h_tan_rat', fam: 3, name: 'tan(A/2) with no root', mem: false, ask: 'with no square root', lhs: fn('tan', HALF), L: function (v) { return tan(v.A / 2); },
+      right: [opt(frac(sA, ONE + PLUS + cA), function (v) { return sin(v.A) / (1 + cos(v.A)); }),
+              opt(frac(ONE + MINUS + cA, sA), function (v) { return (1 - cos(v.A)) / sin(v.A); })],
+      wrong: [opt(frac(sA, ONE + MINUS + cA), function (v) { return sin(v.A) / (1 - cos(v.A)); }),
+              opt(frac(ONE + PLUS + cA, sA), function (v) { return (1 + cos(v.A)) / sin(v.A); }),
+              opt(frac(cA, ONE + PLUS + sA), function (v) { return cos(v.A) / (1 + sin(v.A)); })],
+      hook: 'There are two forms with no root: sin A over 1 plus cos A, or 1 minus cos A over sin A. The 1 always sits with cos A, never with sin A.' }
+  ];
+
+  /* One right answer and three wrong ones, shuffled. rnd is injectable for tests. */
+  function makeOptions(f, rnd) {
+    rnd = rnd || Math.random;
+    function mix(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+    var r = f.right[Math.floor(rnd() * f.right.length)];
+    var out = [{ m: r.m, ev: r.ev, ok: true }];
+    mix(f.wrong).slice(0, 3).forEach(function (o) { out.push({ m: o.m, ev: o.ev, ok: false }); });
+    return mix(out);
+  }
+
+  /* Derivations. given = the starting line. Each step: why (the move), m (the line), ev(v) -> [left, right] numeric check.
+     Lines are in the one order that makes sense: each line uses only what the lines above it show. */
+  function st(why, m, ev) { return { why: why, m: m, ev: ev }; }
+  var DERIVS = [
+    { key: 'd_pyth', short: 'sin² + cos² = 1', name: 'Derive sin² θ + cos² θ = 1',
+      goal: row(s2T + PLUS + c2T + EQ + ONE), G: function (v) { return [sq(sin(v.t)) + sq(cos(v.t)), 1]; },
+      given: st('Start with the unit circle. Every point (x, y) on it fits this equation.', row(sup(X, TWO) + PLUS + sup(Y, TWO) + EQ + ONE), function (v) { return [sq(cos(v.t)) + sq(sin(v.t)), 1]; }),
+      steps: [
+        st('On the unit circle, x is cos θ and y is sin θ.', row(X + EQ + cT) + '<mtext>&nbsp;&nbsp;and&nbsp;&nbsp;</mtext>' + row(Y + EQ + sT), function (v) { return [cos(v.t) * cos(v.t) + sin(v.t) * sin(v.t), 1]; }),
+        st('Put cos θ in for x and sin θ in for y.', row(sup(par(cT), TWO) + PLUS + sup(par(sT), TWO) + EQ + ONE), function (v) { return [sq(cos(v.t)) + sq(sin(v.t)), 1]; }),
+        st('Write the squares the usual way, sine first.', row(s2T + PLUS + c2T + EQ + ONE), function (v) { return [sq(sin(v.t)) + sq(cos(v.t)), 1]; })
+      ] },
+    { key: 'd_tansec', short: '1 + tan² = sec²', name: 'Derive 1 + tan² θ = sec² θ',
+      goal: row(ONE + PLUS + t2T + EQ + se2T), G: function (v) { return [1 + sq(tan(v.t)), 1 / sq(cos(v.t))]; },
+      given: st('Start with the one you know by heart.', row(s2T + PLUS + c2T + EQ + ONE), function (v) { return [sq(sin(v.t)) + sq(cos(v.t)), 1]; }),
+      steps: [
+        st('Divide every term by cos² θ.', row(frac(s2T, c2T) + PLUS + frac(c2T, c2T) + EQ + frac(ONE, c2T)), function (v) { return [sq(sin(v.t)) / sq(cos(v.t)) + sq(cos(v.t)) / sq(cos(v.t)), 1 / sq(cos(v.t))]; }),
+        st('cos² θ over itself is 1.', row(frac(s2T, c2T) + PLUS + ONE + EQ + frac(ONE, c2T)), function (v) { return [sq(sin(v.t)) / sq(cos(v.t)) + 1, 1 / sq(cos(v.t))]; }),
+        st('sin over cos is tan, so the first term is tan² θ.', row(t2T + PLUS + ONE + EQ + frac(ONE, c2T)), function (v) { return [sq(tan(v.t)) + 1, 1 / sq(cos(v.t))]; }),
+        st('1 over cos is sec, so the right side is sec² θ.', row(ONE + PLUS + t2T + EQ + se2T), function (v) { return [1 + sq(tan(v.t)), sq(1 / cos(v.t))]; })
+      ] },
+    { key: 'd_cotcsc', short: '1 + cot² = csc²', name: 'Derive 1 + cot² θ = csc² θ',
+      goal: row(ONE + PLUS + ct2T + EQ + cs2T), G: function (v) { return [1 + 1 / sq(tan(v.t)), 1 / sq(sin(v.t))]; },
+      given: st('Start with the one you know by heart.', row(s2T + PLUS + c2T + EQ + ONE), function (v) { return [sq(sin(v.t)) + sq(cos(v.t)), 1]; }),
+      steps: [
+        st('Divide every term by sin² θ.', row(frac(s2T, s2T) + PLUS + frac(c2T, s2T) + EQ + frac(ONE, s2T)), function (v) { return [sq(sin(v.t)) / sq(sin(v.t)) + sq(cos(v.t)) / sq(sin(v.t)), 1 / sq(sin(v.t))]; }),
+        st('sin² θ over itself is 1.', row(ONE + PLUS + frac(c2T, s2T) + EQ + frac(ONE, s2T)), function (v) { return [1 + sq(cos(v.t)) / sq(sin(v.t)), 1 / sq(sin(v.t))]; }),
+        st('cos over sin is cot, so the second term is cot² θ.', row(ONE + PLUS + ct2T + EQ + frac(ONE, s2T)), function (v) { return [1 + sq(cos(v.t) / sin(v.t)), 1 / sq(sin(v.t))]; }),
+        st('1 over sin is csc, so the right side is csc² θ.', row(ONE + PLUS + ct2T + EQ + cs2T), function (v) { return [1 + 1 / sq(tan(v.t)), sq(1 / sin(v.t))]; })
+      ] },
+    { key: 'd_halfsin', short: 'Half-angle sine', name: 'Derive the half-angle sine',
+      goal: row(fn('sin', HALF) + EQ + PM + root(frac(ONE + MINUS + cA, TWO))), G: function (v) { return [sin(v.A / 2), sqrt((1 - cos(v.A)) / 2)]; },
+      given: st('Start with the cosine sum formula.', row(fnp('cos', X + PLUS + Y) + EQ + times(cx, cy) + MINUS + times(sx, sy)), function (v) { return [cos(v.x + v.y), cos(v.x) * cos(v.y) - sin(v.x) * sin(v.y)]; }),
+      steps: [
+        st('Let y be the same angle as x.', row(XX + EQ + c2x + MINUS + s2x), function (v) { return [cos(v.x + v.x), sq(cos(v.x)) - sq(sin(v.x))]; }),
+        st('Swap cos² x for 1 − sin² x. That leaves two of the sin² x.', row(XX + EQ + ONE + MINUS + times(TWO, s2x)), function (v) { return [cos(v.x + v.x), 1 - 2 * sq(sin(v.x))]; }),
+        st('Solve for sin² x.', row(s2x + EQ + frac(ONE + MINUS + XX, TWO)), function (v) { return [sq(sin(v.x)), (1 - cos(v.x + v.x)) / 2]; }),
+        st('Take the square root of both sides.', row(sx + EQ + PM + root(frac(ONE + MINUS + XX, TWO))), function (v) { return [sin(v.x), sqrt((1 - cos(v.x + v.x)) / 2)]; }),
+        st('Call the whole angle A. Then x is half of it, A/2.', row(fn('sin', HALF) + EQ + PM + root(frac(ONE + MINUS + cA, TWO))), function (v) { return [sin(v.A / 2), sqrt((1 - cos(v.A)) / 2)]; })
+      ] },
+    { key: 'd_halfcos', short: 'Half-angle cosine', name: 'Derive the half-angle cosine',
+      goal: row(fn('cos', HALF) + EQ + PM + root(frac(ONE + PLUS + cA, TWO))), G: function (v) { return [cos(v.A / 2), sqrt((1 + cos(v.A)) / 2)]; },
+      given: st('Start where the sine version started: the cosine sum formula with both angles equal to x.', row(XX + EQ + c2x + MINUS + s2x), function (v) { return [cos(v.x + v.x), sq(cos(v.x)) - sq(sin(v.x))]; }),
+      steps: [
+        st('Swap sin² x for 1 − cos² x. That leaves two of the cos² x.', row(XX + EQ + times(TWO, c2x) + MINUS + ONE), function (v) { return [cos(v.x + v.x), 2 * sq(cos(v.x)) - 1]; }),
+        st('Solve for cos² x.', row(c2x + EQ + frac(ONE + PLUS + XX, TWO)), function (v) { return [sq(cos(v.x)), (1 + cos(v.x + v.x)) / 2]; }),
+        st('Take the square root of both sides.', row(cx + EQ + PM + root(frac(ONE + PLUS + XX, TWO))), function (v) { return [cos(v.x), sqrt((1 + cos(v.x + v.x)) / 2)]; }),
+        st('Call the whole angle A. Then x is half of it, A/2.', row(fn('cos', HALF) + EQ + PM + root(frac(ONE + PLUS + cA, TWO))), function (v) { return [cos(v.A / 2), sqrt((1 + cos(v.A)) / 2)]; })
+      ] },
+    { key: 'd_tansum', short: 'tan(x + y)', name: 'Derive tan(x + y)',
+      goal: row(tanXY + EQ + frac(tx + PLUS + ty, ONE + MINUS + times(tx, ty))), G: function (v) { return [tan(v.x + v.y), (tan(v.x) + tan(v.y)) / (1 - tan(v.x) * tan(v.y))]; },
+      given: st('Start with tangent as sine over cosine.', row(tanXY + EQ + frac(fnp('sin', X + PLUS + Y), fnp('cos', X + PLUS + Y))), function (v) { return [tan(v.x + v.y), sin(v.x + v.y) / cos(v.x + v.y)]; }),
+      steps: [
+        st('Use the sum formulas on the top and on the bottom.', row(tanXY + EQ + frac(times(sx, cy) + PLUS + times(cx, sy), times(cx, cy) + MINUS + times(sx, sy))), function (v) { return [tan(v.x + v.y), (sin(v.x) * cos(v.y) + cos(v.x) * sin(v.y)) / (cos(v.x) * cos(v.y) - sin(v.x) * sin(v.y))]; }),
+        st('Divide every term, top and bottom, by cos x cos y.', row(tanXY + EQ + frac(frac(sx, cx) + PLUS + frac(sy, cy), ONE + MINUS + frac(times(sx, sy), times(cx, cy)))), function (v) { return [tan(v.x + v.y), (sin(v.x) / cos(v.x) + sin(v.y) / cos(v.y)) / (1 - (sin(v.x) * sin(v.y)) / (cos(v.x) * cos(v.y)))]; }),
+        st('Each sin over cos is a tan.', row(tanXY + EQ + frac(tx + PLUS + ty, ONE + MINUS + times(tx, ty))), function (v) { return [tan(v.x + v.y), (tan(v.x) + tan(v.y)) / (1 - tan(v.x) * tan(v.y))]; })
+      ] }
+  ];
+
+  /* The tapped line is right only if it is the next one in the list. */
+  function nextIsRight(placed, stepIndex) { return stepIndex === placed; }
+  /*PURE-END*/
+
+  /* ---------- Setup ---------- */
+  var items = FORMULAS.map(function (f) { return { key: f.key, name: f.name, group: FAMS[f.fam] }; })
+    .concat(DERIVS.map(function (d) { return { key: d.key, name: d.name, group: 'Derivations' }; }));
+  var deck = null, clean = {};
+  function cleanCount() { var n = 0; DERIVS.forEach(function (d) { if (clean[d.key] === true) n++; }); return n; }
+
+  Kit.init({
+    prefix: 'idb', items: items, slowMs: null, planDays: 5, planMinutes: 5, idleCapMs: 60000, dtCapMs: 120000,
+    mastery: function () { return { done: (deck ? deck.auto() : 0) + cleanCount(), total: items.length }; },
+    masteryLabel: 'Solid now'
+  });
+  deck = Kit.deck({ id: 'recall', n: FORMULAS.length, fastMs: 8000 });
+  clean = Kit.load('clean', {});
+  if (!clean || typeof clean !== 'object' || Array.isArray(clean)) clean = {};
+
+  /* ---------- Recall ---------- */
+  var rs = { cur: -1, opts: [], t0: 0, locked: false, streak: 0, fam: Kit.load('fam', -1), timer: null };
+  if (typeof rs.fam !== 'number' || rs.fam < -1 || rs.fam >= FAMS.length) rs.fam = -1;
+
+  function buildSeg() {
+    var h = '<button type="button" data-f="-1">All</button>';
+    FAM_SHORT.forEach(function (n, i) { h += '<button type="button" data-f="' + i + '">' + Kit.esc(n) + '</button>'; });
+    $('famseg').innerHTML = h;
+    Array.prototype.forEach.call($('famseg').querySelectorAll('button'), function (b) {
+      b.addEventListener('click', function () {
+        rs.fam = +b.dataset.f; Kit.save('fam', rs.fam); paintSeg();
+        $('feedback').className = 'feedback'; $('feedback').textContent = 'Pick the right side of the formula. Keys 1 to 4 work too.';
+        showCard();
+      });
+    });
+    paintSeg();
+  }
+  function paintSeg() {
+    Array.prototype.forEach.call($('famseg').querySelectorAll('button'), function (b) {
+      b.setAttribute('aria-pressed', +b.dataset.f === rs.fam ? 'true' : 'false');
+    });
+  }
+  function buildGrid() {
+    var h = '';
+    FAMS.forEach(function (name, fi) {
+      h += '<div class="fam"><span class="l">' + Kit.esc(name) + '</span><div class="sw">';
+      FORMULAS.forEach(function (f, i) { if (f.fam === fi) h += '<span class="lv" data-c="' + i + '"></span>'; });
+      h += '</div></div>';
+    });
+    $('mgrid').innerHTML = h;
+    $('solidof').textContent = '/' + FORMULAS.length;
+  }
+  function paintSide() {
+    Array.prototype.forEach.call($('mgrid').querySelectorAll('.lv'), function (el) {
+      var c = +el.dataset.c, lv = deck.levels[c];
+      el.className = 'lv' + (lv ? ' lv' + lv : '') + (c === rs.cur ? ' now' : '');
+      el.setAttribute('role', 'img');
+      el.setAttribute('title', FORMULAS[c].name);
+      el.setAttribute('aria-label', FORMULAS[c].name + ': level ' + lv + ' of 3');
+    });
+    $('solid').textContent = deck.auto();
+    $('streak').textContent = rs.streak;
+  }
+  function tagText(f) { return FAMS[f.fam] + (f.ask ? ' · ' + f.ask : ''); }
+
+  function showCard() {
+    clearTimeout(rs.timer);
+    var fam = rs.fam;
+    rs.cur = deck.next(fam < 0 ? null : function (i) { return FORMULAS[i].fam === fam; });
+    var f = FORMULAS[rs.cur];
+    rs.opts = makeOptions(f); rs.locked = false;
+    $('stage').className = 'stage';
+    $('prompt').className = 'prompt';
+    $('prompt').innerHTML = Kit.math(row(f.lhs + EQ + mo('?')));
+    $('famtag').textContent = tagText(f);
+    $('next').hidden = true;
+    var box = $('opts'); box.innerHTML = '';
+    rs.opts.forEach(function (o, i) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'key';
+      b.innerHTML = Kit.math(o.m);
+      b.addEventListener('click', function () { answer(i, b); });
+      box.appendChild(b);
+    });
+    paintSide();
+    rs.t0 = performance.now();
+  }
+  function answer(i, btn) {
+    if (rs.locked) return;
+    rs.locked = true;
+    var f = FORMULAS[rs.cur], ok = rs.opts[i].ok === true, dt = performance.now() - rs.t0, fb = $('feedback'), rightM = '';
+    Array.prototype.forEach.call($('opts').querySelectorAll('.key'), function (b, j) {
+      b.disabled = true;
+      if (rs.opts[j].ok) { b.classList.add('right'); rightM = rs.opts[j].m; }
+    });
+    $('prompt').className = 'prompt small';
+    $('prompt').innerHTML = Kit.math(row(f.lhs + EQ + rightM));
+    deck.mark(rs.cur, ok, dt);
+    if (ok) {
+      rs.streak++;
+      $('stage').className = 'stage ok';
+      fb.className = 'feedback good';
+      fb.innerHTML = dt > 8000 ? '<b>Right.</b> Under 8 seconds is what counts as solid.' : '<b>Right.</b>';
+      rs.timer = setTimeout(showCard, 1100);
+    } else {
+      rs.streak = 0;
+      btn.classList.add('wrong');
+      $('stage').className = 'stage no';
+      fb.className = 'feedback bad';
+      fb.innerHTML = '<b>Not that one.</b> ' + Kit.esc(f.hook);
+      $('next').hidden = false; $('next').focus();
+    }
+    paintSide();
+    Kit.recAnswer(f.key, ok, dt);
+  }
+  $('next').addEventListener('click', function () {
+    $('feedback').className = 'feedback'; $('feedback').textContent = '';
+    showCard();
+  });
+  var resetArmed = null;
+  $('reset').addEventListener('click', function () {
+    var b = $('reset');
+    if (!resetArmed) {
+      b.textContent = 'Tap again to clear the grid';
+      resetArmed = setTimeout(function () { resetArmed = null; b.textContent = 'Reset this grid'; }, 4000);
+      return;
+    }
+    clearTimeout(resetArmed); resetArmed = null; b.textContent = 'Reset this grid';
+    deck.reset(); rs.streak = 0;
+    $('feedback').className = 'feedback'; $('feedback').textContent = 'Grid cleared. The report keeps its history.';
+    showCard();
+  });
+
+  /* ---------- Derive ---------- */
+  var ds = { idx: Kit.load('didx', 0), placed: 0, order: [], misses: 0, t0: 0, recorded: false };
+  if (typeof ds.idx !== 'number' || ds.idx < 0 || ds.idx >= DERIVS.length) ds.idx = 0;
+
+  function buildChips() {
+    var h = '';
+    DERIVS.forEach(function (d, i) { h += '<button type="button" class="chip" data-i="' + i + '">' + Kit.esc(d.short) + '</button>'; });
+    $('dchips').innerHTML = h;
+    Array.prototype.forEach.call($('dchips').querySelectorAll('.chip'), function (b) {
+      b.addEventListener('click', function () { loadDeriv(+b.dataset.i); });
+    });
+  }
+  function paintChips() {
+    Array.prototype.forEach.call($('dchips').querySelectorAll('.chip'), function (b) {
+      var i = +b.dataset.i, done = clean[DERIVS[i].key] === true;
+      b.className = 'chip' + (done ? ' done' : '');
+      b.setAttribute('aria-pressed', i === ds.idx ? 'true' : 'false');
+      b.setAttribute('aria-label', DERIVS[i].short + (done ? ', done with no misses' : ''));
+    });
+  }
+  function lineHTML(num, s) {
+    return '<li><span class="num">' + num + '</span><span class="why">' + Kit.esc(s.why) + '</span><div class="line">' + Kit.math(s.m) + '</div></li>';
+  }
+  function paintDeriv() {
+    var d = DERIVS[ds.idx], h = lineHTML('Start', d.given), i;
+    for (i = 0; i < ds.placed; i++) h += lineHTML(i + 1, d.steps[i]);
+    $('built').innerHTML = h;
+    var box = $('tiles'); box.innerHTML = '';
+    var finished = ds.placed >= d.steps.length;
+    ds.order.forEach(function (s) {
+      if (s < ds.placed) return;
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'key';
+      b.innerHTML = Kit.math(d.steps[s].m);
+      b.addEventListener('click', function () { tapStep(s, b); });
+      box.appendChild(b);
+    });
+    $('dask').hidden = finished;
+    $('dnext').hidden = !finished;
+    paintChips();
+  }
+  function loadDeriv(i) {
+    ds.idx = i; Kit.save('didx', i);
+    var d = DERIVS[i], n = d.steps.length, tries = 0;
+    ds.placed = 0; ds.misses = 0; ds.recorded = false;
+    var base = []; for (var k = 0; k < n; k++) base.push(k);
+    do { ds.order = Kit.shuffle(base); tries++; } while (n > 1 && ds.order.join() === base.join() && tries < 20);
+    $('dgoal').innerHTML = Kit.math(d.goal);
+    $('dfeedback').className = 'feedback';
+    $('dfeedback').textContent = 'Keys 1 to ' + n + ' work too.';
+    paintDeriv();
+    ds.t0 = performance.now();
+  }
+  function tapStep(s, btn) {
+    var d = DERIVS[ds.idx], fb = $('dfeedback'), dt = performance.now() - ds.t0;
+    if (ds.placed >= d.steps.length) return;
+    if (nextIsRight(ds.placed, s)) {
+      ds.placed++;
+      if (ds.placed >= d.steps.length) {
+        if (ds.misses === 0) {
+          if (!ds.recorded) { ds.recorded = true; clean[d.key] = true; Kit.save('clean', clean); Kit.recAnswer(d.key, true, dt); }
+          fb.className = 'feedback good';
+          fb.innerHTML = '<b>Clean run.</b> You can rebuild this one from scratch.';
+        } else {
+          fb.className = 'feedback bad';
+          fb.innerHTML = '<b>Done, with ' + ds.misses + ' wrong ' + (ds.misses === 1 ? 'tap' : 'taps') + '.</b> Run it again until you can do it with none.';
+        }
+        paintDeriv();
+        $('dnext').focus();
+      } else {
+        fb.className = 'feedback good';
+        fb.innerHTML = '<b>Yes.</b> ' + Kit.esc(d.steps[s].why);
+        paintDeriv();
+      }
+    } else {
+      ds.misses++;
+      if (!ds.recorded) { ds.recorded = true; Kit.recAnswer(d.key, false, dt); }
+      Array.prototype.forEach.call($('tiles').querySelectorAll('.key'), function (b) { b.classList.remove('wrong'); });
+      btn.classList.add('wrong');
+      fb.className = 'feedback bad';
+      fb.innerHTML = '<b>Not yet.</b> That line uses something you have not written down. The next move: ' + Kit.esc(d.steps[ds.placed].why);
+    }
+  }
+  $('dagain').addEventListener('click', function () { loadDeriv(ds.idx); });
+  $('dnext').addEventListener('click', function () {
+    var n = DERIVS.length, i, pick = (ds.idx + 1) % n;
+    for (i = 1; i <= n; i++) { var c = (ds.idx + i) % n; if (clean[DERIVS[c].key] !== true) { pick = c; break; } }
+    loadDeriv(pick);
+  });
+
+  /* ---------- Sheet ---------- */
+  function buildSheet() {
+    var notes = [
+      'Three flips and one quotient. Know these cold. Your tutor\'s sheet writes cosec. It is the same thing as csc.',
+      'Memorize the first one. The other two come from dividing it by cos² θ or by sin² θ.',
+      'Memorize the four for sine and cosine. The tangent ones come from sine over cosine.',
+      'Memorize sine and cosine. The quadrant that A/2 lands in picks the plus or the minus. The tangent forms come from sine over cosine.'
+    ];
+    var h = '<section><p>Everything on your tutor\'s identity sheet up to the double angle formulas. <span class="badge mem">Memorize</span> means know it by heart. <span class="badge reb">Rebuild</span> means you can get it from another formula, and the Derive tab shows how.</p></section>';
+    FAMS.forEach(function (name, fi) {
+      h += '<section><h2>' + Kit.esc(name) + '</h2><p class="note">' + Kit.esc(notes[fi]) + '</p><div class="flist">';
+      FORMULAS.forEach(function (f) {
+        if (f.fam !== fi) return;
+        f.right.forEach(function (r) {
+          h += '<div class="frow"><div class="f">' + Kit.math(row(f.lhs + EQ + r.m)) + '</div><span class="badge ' + (f.mem ? 'mem">Memorize' : 'reb">Rebuild') + '</span></div>';
+        });
+      });
+      h += '</div></section>';
+    });
+    $('sheet').innerHTML = h;
+  }
+
+  /* ---------- Boot ---------- */
+  Kit.digitKeys(function (v) { return v === 'recall' ? $('opts') : v === 'derive' ? $('tiles') : null; });
+  buildSeg();
+  buildGrid();
+  buildChips();
+  buildSheet();
+  showCard();
+  loadDeriv(ds.idx);
+  Kit.start();
+})();
+</script>
