@@ -1,11 +1,12 @@
-<title>Practice Log</title>
+<title>Math Practice</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
 <style>
 /*KIT_CSS*/
 </style>
 <style>
-  /* Parent view: one phone-width column. Top to bottom: today, this week as seven bars against the 20-minute line,
-     what to work on, weak spots to bring to tutoring, each page, then the day-by-day log. */
+  /* Homepage: the practice pages plus the practice numbers, in one phone-width column. Top to bottom: today,
+     the pages (each with its own numbers), this week as seven bars against the 20-minute line, what to work on,
+     weak spots, then a link to the full log. */
   .wrap { max-width: 680px; }
   .topline { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; }
   .topline .note { flex: 1 1 200px; }
@@ -32,53 +33,41 @@
   .spots b { font-family: var(--font-display); font-weight: 700; }
   .spots span { font-size: .93rem; }
   .spots i { font-style: normal; font-size: .7rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-right: 6px; }
-  .pages { display: flex; flex-direction: column; gap: 10px; }
-  .pg { background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
-  .pg.focus { border-color: var(--accent); }
-  .pg-h { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
-  .pg-h h3 { font-family: var(--font-display); font-weight: 700; font-size: 1.08rem; margin: 0; }
+  .pages { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .pg { display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 14px 16px; color: inherit; text-decoration: none; }
+  .pg:hover, .pg:focus-visible { border-color: var(--accent); outline: none; }
+  .pg.focus { border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent); }
+  .pg-h { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; }
+  .pg-h b { font-family: var(--font-display); font-weight: 700; font-size: 1.12rem; color: var(--accent); }
   .pg-h .when { font-size: .85rem; color: var(--muted); }
   .pg-h .when.stale { color: var(--bad); font-weight: 600; }
-  .pg .stats { gap: 12px 26px; }
-  .pg .stat .n { font-size: 1.3rem; }
+  .pg .blurb { font-size: .93rem; color: var(--muted); }
+  .pg .nums { font-size: .9rem; font-variant-numeric: tabular-nums; }
   .pg .tagline { font-size: .72rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--accent); }
-  .gate { display: flex; flex-direction: column; gap: 12px; }
-  .gate input { font: inherit; color: inherit; background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px; padding: 11px 12px; width: 100%; min-width: 0; }
-  .gate a, .foot a, .foot button { color: var(--accent); }
-  .foot { display: flex; flex-direction: column; gap: 8px; }
-  .log { min-width: 500px; width: 100%; }
+  .full { display: block; text-align: center; padding: 14px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--accent); font-weight: 600; text-decoration: none; }
+  .full:hover, .full:focus-visible { border-color: var(--accent); outline: none; }
 </style>
 
 <div class="wrap">
   <header class="head">
-    <h1>Practice Log</h1>
-    <div class="topline"><p class="note" id="sub">Loading.</p><button class="ghost" id="refresh" type="button" hidden>Refresh</button></div>
+    <h1>Math Practice</h1>
+    <div class="topline"><p class="note" id="sub">Loading the practice numbers.</p><button class="ghost" id="refresh" type="button" hidden>Refresh</button></div>
   </header>
   <div class="banner" id="banner" hidden></div>
-  <section class="panel gate" id="gate" hidden>
-    <p id="gate-msg" style="margin:0"></p>
-    <form id="gate-form" class="row" hidden>
-      <input id="gate-in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste your private link here" aria-label="Your private link">
-      <button class="primary" type="submit">Open</button>
-    </form>
-    <p class="note" style="margin:0"><a href="?demo">See this page with sample data</a></p>
-  </section>
   <main class="rep" id="out"></main>
-  <div class="foot" id="foot" hidden>
-    <p class="note">The numbers come from the practice pages on his devices. A session shows up here about 15 seconds after he practices. Minutes count active practice only.</p>
-    <p class="note"><button class="link" id="forget" type="button">Remove the private link from this device</button></p>
-  </div>
 </div>
 
 <script>
 (function () {
   'use strict';
   var SEND_URL = '__SEND_URL__';
+  var SHEET_URL = '__SHEET_URL__';
+  var LINKS = /*LINKS*/[];                            // [{ href, title, blurb }] from site.py
   var READY = /^https:\/\/script\.google\.com\/|^http:\/\/127\.0\.0\.1:/.test(SEND_URL);
   var DEMO = /[?&]demo\b/.test(location.search);
   var TARGET = 20;                                   // minutes a day in the plan
   var PAGES = ['Exact Trig Values', 'Unit Circle Trainer', 'Fraction Reps', 'Six Trig Graphs', 'Identity Builder', 'Half-Angle Steps'];
-  var MINE = 'Friday Check';                         // the parent's own quiz page: shown, never counted as his practice
+  var MINE = 'Friday Check';                         // the parent's quiz page: shown, never counted as practice
   var DRILL = 'Exact Trig Values';                   // the 5-minute daily drill
   var PLAN = [                                       // days: 0 = Monday
     { start: '2026-11-23', name: 'trig values and the unit circle', pages: ['Exact Trig Values', 'Unit Circle Trainer'], days: [0, 1, 2, 4] },
@@ -90,9 +79,8 @@
 
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function load(k, d) { try { var s = localStorage.getItem('pv.' + k); return s == null ? d : JSON.parse(s); } catch (e) { return d; } }
-  function save(k, v) { try { localStorage.setItem('pv.' + k, JSON.stringify(v)); } catch (e) {} }
-  function drop(k) { try { localStorage.removeItem('pv.' + k); } catch (e) {} }
+  function load(k, d) { try { var s = localStorage.getItem('home.' + k); return s == null ? d : JSON.parse(s); } catch (e) { return d; } }
+  function save(k, v) { try { localStorage.setItem('home.' + k, JSON.stringify(v)); } catch (e) {} }
 
   /*PURE-START*/
   function dn(s) { var p = String(s).split('-'); return Math.round(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000); }
@@ -213,6 +201,38 @@
   var data = null, T = 0, off = 0, state = { fresh: false, at: 0, error: '' };
 
   function tile(n, label) { return '<div class="stat"><span class="n">' + n + '</span><span class="l">' + label + '</span></div>'; }
+  function todayNum() { var d = new Date(); return Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000); }
+
+  /* The page links. Without numbers (not loaded yet, or offline with nothing cached) they still show and work. */
+  function pagesBlock(B, seven, all, focus) {
+    var h = '<section><h2>Practice pages</h2><ul class="pages">';
+    LINKS.forEach(function (L) {
+      var isMine = L.title === MINE, isFocus = focus.indexOf(L.title) >= 0, nums = '', when = '', stale = false;
+      if (B) {
+        if (isMine) {
+          var m = range(B.mine, T - 69, T).pages[MINE];
+          when = ago(m ? m.last : -1, T);
+          if (m) nums = m.n + ' cards asked in the last 10 weeks, ' + pctOf(m.r, m.n) + ' known.';
+        } else {
+          var p7 = seven.pages[L.title], pa = all.pages[L.title], last = pa ? pa.last : -1;
+          when = ago(last, T); stale = isFocus && T - last >= 3;
+          if (pa) {
+            var bits = [];
+            bits.push(p7 ? 'Last 7 days: ' + mins(p7.min) + ' min, ' + pctOf(p7.r, p7.n) + ' right' : 'Nothing in the last 7 days');
+            if (pa.level) bits.push('Level ' + pa.level);
+            if (pa.test) bits.push('Latest test ' + pa.test);
+            nums = bits.join('. ') + '.';
+          }
+        }
+      }
+      h += '<li><a class="pg' + (isFocus ? ' focus' : '') + '" href="' + esc(L.href) + '">' +
+        (isFocus ? '<span class="tagline">This week\'s page</span>' : '') +
+        '<span class="pg-h"><b>' + esc(L.title) + '</b>' + (when ? '<span class="when' + (stale ? ' stale' : '') + '">' + esc(when) + '</span>' : '') + '</span>' +
+        '<span class="blurb">' + esc(L.blurb) + '</span>' + (nums ? '<span class="nums">' + esc(nums) + '</span>' : '') + '</a></li>';
+    });
+    return h + '</ul></section>';
+  }
+
   function weekBlock(days) {
     var s = monday(T) + 7 * off, w = planWeek(s), planned = w >= 0 ? PLAN[w].days : [0, 1, 2, 3, 4];
     var tot = range(days, s, s + 6), h = '';
@@ -234,25 +254,33 @@
       tile(pctOf(tot.r, tot.n), 'Answers right') + '</div></section>';
     return h;
   }
+
   function render() {
-    var B = build(data.rows), days = B.days, h = '', words = { bad: 'Fix', warn: 'Watch', ok: 'Good' };
+    var h = '', words = { bad: 'Fix', warn: 'Watch', ok: 'Good' };
+    if (!data) {                                       // no numbers yet: the links alone
+      $('out').innerHTML = pagesBlock(null, null, null, []) + fullLink();
+      paintSub(); return;
+    }
+    var B = build(data.rows), days = B.days;
     var td = days[ds(T)], w = planWeek(T), planToday = w >= 0 && PLAN[w].days.indexOf(wd(T)) >= 0;
+    var seven = range(days, T - 6, T), all = range(days, T - 69, T), focus = w >= 0 ? PLAN[w].pages : [];
 
     h += '<section><h2>Today</h2><div class="today">';
     if (practiced(td)) {
       var names = Object.keys(td.pages);
       h += '<span class="pill ok">Done</span><span>' + mins(td.min) + ' min on ' + esc(names.join(' and ')) + ', ' + pctOf(td.r, td.n) + ' right.</span>';
-    } else if (planToday) h += '<span class="pill warn">Not yet</span><span>No practice so far today. It is a planned day.</span>';
+    } else if (planToday) h += '<span class="pill warn">Not yet</span><span>No practice so far today. It is a planned day' + (focus.length ? ': ' + esc(focus.join(' and ')) : '') + '.</span>';
     else h += '<span class="pill">Off</span><span>No practice today. It is not a planned day.</span>';
     h += '</div></section>';
 
+    h += pagesBlock(B, seven, all, focus);
     h += weekBlock(days);
 
     h += '<section><h2>What to work on</h2><ul class="flags">';
     flags(days, T).forEach(function (f) { h += '<li><span class="pill ' + f.lv + '">' + words[f.lv] + '</span><span>' + esc(f.text) + '</span></li>'; });
     h += '</ul></section>';
 
-    var seven = range(days, T - 6, T), spots = '';
+    var spots = '';
     PAGES.concat(Object.keys(seven.pages).filter(function (n) { return PAGES.indexOf(n) < 0; })).forEach(function (name) {
       var p = seven.pages[name];
       if (!p || (!p.miss && !p.slow)) return;
@@ -262,105 +290,60 @@
       ? '<p class="note">Wrong answers out of tries, and right answers that took too long. Bring this list to tutoring.</p><ul class="spots">' + spots + '</ul>'
       : '<p class="empty">No repeated misses or slow answers in the last 7 days.</p>') + '</section>';
 
-    h += '<section><h2>Each page</h2><div class="pages">';
-    var all = range(days, T - 69, T), focus = w >= 0 ? PLAN[w].pages : [];
-    PAGES.concat(Object.keys(all.pages).filter(function (n) { return PAGES.indexOf(n) < 0; })).forEach(function (name) {
-      var p7 = seven.pages[name] || { min: 0, n: 0, r: 0 }, pa = all.pages[name], last = pa ? pa.last : -1, isFocus = focus.indexOf(name) >= 0;
-      h += '<article class="pg' + (isFocus ? ' focus' : '') + '">' + (isFocus ? '<span class="tagline">This week\'s page</span>' : '') +
-        '<div class="pg-h"><h3>' + esc(name) + '</h3><span class="when' + (isFocus && last >= 0 && T - last >= 3 ? ' stale' : '') + '">' + ago(last, T) + '</span></div>';
-      if (pa) {
-        h += '<div class="stats">' + tile(mins(p7.min) + '<small> min</small>', 'Last 7 days') + tile(pctOf(p7.r, p7.n), 'Right') +
-          (pa.level ? tile(esc(pa.level.split(' of ')[0]) + (pa.level.indexOf(' of ') > 0 ? '<small> of ' + esc(pa.level.split(' of ')[1]) + '</small>' : ''), 'Level reached') : '') + '</div>';
-        if (pa.test) h += '<p class="note">Latest test: ' + esc(pa.test) + '</p>';
-      }
-      h += '</article>';
-    });
-    var mine = range(B.mine, T - 69, T).pages[MINE];
-    if (mine) h += '<article class="pg"><div class="pg-h"><h3>' + MINE + ' (your quizzing)</h3><span class="when">' + ago(mine.last, T) + '</span></div>' +
-      '<div class="stats">' + tile(String(mine.n), 'Cards asked') + tile(pctOf(mine.r, mine.n), 'Got it') + '</div>' + (mine.miss ? '<p class="note">Missed: ' + esc(mine.miss) + '</p>' : '') + '</article>';
-    h += '</div></section>';
-
-    var logRows = '';
-    for (var k = T; k > T - 21; k--) {
-      var d = days[ds(k)];
-      if (!practiced(d)) continue;
-      Object.keys(d.pages).forEach(function (name, i) {
-        var p = d.pages[name];
-        logRows += '<tr><td>' + (i ? '' : esc(dayName(k))) + '</td><td>' + esc(name) + '</td><td>' + mins(p.min) + '</td><td>' + p.n + '</td><td>' + pctOf(p.r, p.n) + '</td><td>' + esc(p.tests.join('; ') || '–') + '</td></tr>';
-      });
-    }
-    h += '<section><h2>Day by day, last 3 weeks</h2>' + (logRows
-      ? '<div class="scroll"><table class="log"><thead><tr><th>Day</th><th>Page</th><th>Min</th><th>Answers</th><th>Right</th><th>Tests</th></tr></thead><tbody>' + logRows + '</tbody></table></div>'
-      : '<p class="empty">No practice in the last 3 weeks.</p>') + '</section>';
-
+    h += fullLink();
     $('out').innerHTML = h;
     $('wk-prev').addEventListener('click', function () { off--; render(); });
     $('wk-next').addEventListener('click', function () { if (off < 0) { off++; render(); } });
     $('wk-prev').disabled = off <= -9;
-    $('foot').hidden = DEMO;
     paintSub();
+  }
+  function fullLink() {
+    return /^https:\/\/docs\.google\.com\//.test(SHEET_URL)
+      ? '<section><a class="full" href="' + esc(SHEET_URL) + '" target="_blank" rel="noopener">Open the full practice log</a>' +
+        '<p class="note">A Google Sheet with every session, day by day and card by card. It opens for the people it is shared with. Practice shows up there and here about 15 seconds after it happens.</p></section>'
+      : '';
   }
   function paintSub() {
     var t = '';
     if (DEMO) t = 'Sample data for a made-up Wednesday, Dec 2.';
+    else if (!READY) t = 'Pick a page to practice.';
     else if (state.error) t = state.error;
-    else if (state.at) t = (state.fresh ? 'Updated ' : 'Showing numbers from ') + new Date(state.at).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + '.';
-    else t = 'Loading.';
+    else if (state.at) t = (state.fresh ? 'Numbers updated ' : 'Numbers from ') + new Date(state.at).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + '.';
+    else t = 'Loading the practice numbers.';
     $('sub').textContent = t;
   }
-  function todayNum() { var d = new Date(); return Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000); }
   function show(d, fresh, at) {
     data = d; T = DEMO ? dn(d.today) : todayNum(); state.fresh = fresh; state.at = at; state.error = '';
-    $('gate').hidden = true; $('refresh').hidden = DEMO;
+    $('refresh').hidden = DEMO;
     render();
   }
-  function gate(msg, form) {
-    $('gate').hidden = false; $('gate-msg').textContent = msg; $('gate-form').hidden = !form;
-    $('out').innerHTML = ''; $('foot').hidden = true; $('refresh').hidden = true; $('sub').textContent = '';
-  }
   function fetchNow() {
-    var key = load('key', '');
-    if (!key) return;
-    state.error = ''; if (!data) $('sub').textContent = 'Loading.';
-    fetch(SEND_URL + '?f=view&k=' + encodeURIComponent(key), { mode: 'cors', credentials: 'omit', cache: 'no-store' })
+    state.error = ''; if (!data) paintSub();
+    fetch(SEND_URL + '?f=view', { mode: 'cors', credentials: 'omit', cache: 'no-store' })
       .then(function (r) { return r.json(); })
       .then(function (j) {
-        if (!j || !j.ok) { drop('key'); drop('cache'); data = null; gate('That private link was not accepted. Open the newest link from the Parent view tab of the practice log Sheet.', true); return; }
+        if (!j || !j.ok) throw new Error('not ok');
         var at = Date.now();
         save('cache', { at: at, data: j });
         show(j, true, at);
-      }, function () {
-        state.error = data ? 'Could not refresh just now. These numbers are from ' + new Date(state.at).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + '.' : 'Could not reach the practice log. Check the connection and tap Refresh.';
+      })
+      .catch(function () {
+        state.error = data ? 'Could not refresh just now. These numbers are from ' + new Date(state.at).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + '.' : 'Could not load the practice numbers. The pages still work. Tap Refresh to try again.';
         $('refresh').hidden = false; paintSub();
       });
   }
-  function takeKey(text) {
-    var m = /(?:[#&?]k=)?([A-Za-z0-9]{12,40})\s*$/.exec(String(text || '').trim());
-    if (!m) return false;
-    save('key', m[1]); return true;
-  }
 
   $('refresh').addEventListener('click', fetchNow);
-  $('forget').addEventListener('click', function () { drop('key'); drop('cache'); data = null; gate('The private link was removed from this device.', READY); });
-  $('gate-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-    if (takeKey($('gate-in').value)) { $('gate').hidden = true; fetchNow(); }
-    else $('gate-msg').textContent = 'That does not look like the private link. Copy the whole link from the Parent view tab of the practice log Sheet.';
-  });
-  document.addEventListener('visibilitychange', function () { if (!DEMO && document.visibilityState === 'visible' && load('key', '') && Date.now() - state.at > 60000) fetchNow(); });
+  document.addEventListener('visibilitychange', function () { if (!DEMO && READY && document.visibilityState === 'visible' && Date.now() - state.at > 60000) fetchNow(); });
 
   if (DEMO) {
     $('banner').hidden = false; $('banner').textContent = 'Sample data. This is how the page looks once practice is arriving.';
     show(sample(), true, Date.now());
   } else {
-    if (/[#&]k=/.test(location.hash) && takeKey(location.hash)) { try { history.replaceState(null, '', location.pathname); } catch (e) {} }
-    if (!READY) gate('The practice log is not connected yet, so there are no numbers to show.', false);
-    else if (!load('key', '')) gate('This page shows the practice numbers once it has your private link. Open the link from the Parent view tab of the practice log Sheet on this device, or paste it here.', true);
-    else {
-      var c = load('cache', null);
-      if (c && c.data && c.data.ok) show(c.data, false, c.at);
-      fetchNow();
-    }
+    T = todayNum();
+    var c = load('cache', null);
+    if (c && c.data && c.data.ok) show(c.data, false, c.at); else render();
+    if (READY) fetchNow();
   }
 })();
 </script>

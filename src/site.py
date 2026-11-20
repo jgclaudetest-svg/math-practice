@@ -5,7 +5,7 @@ Usage: python3 site.py            writes ./site/*.html, ./site/index.html and ./
 Each standalone page saves practice in the browser's own storage for this site, which an iPhone keeps
 between visits. (Inside a framed host, Safari wipes that storage whenever it restarts.)
 """
-import pathlib, re, shutil, sys
+import json, pathlib, re, shutil, sys
 
 here = pathlib.Path(__file__).resolve().parent
 kit = here / "kit"
@@ -66,51 +66,25 @@ for name, src, blurb in PAGES:
     titles.append((name, title, blurb))
     print(f"{name}.html  {len(doc.encode())} bytes  {title!r}")
 
-# The parent view: its own page, not listed on the index.
-pv = (kit / "parent.src.html").read_text().replace("/*KIT_CSS*/", (kit / "kit.css").read_text()).replace("__SEND_URL__", SEND_URL)
-m = re.search(r"<title>(.*?)</title>\s*", pv, re.S)
-pv_title = m.group(1).strip()
-pv = pv[:m.start()] + pv[m.end():]
-(out / "parent.html").write_text(head(pv_title) + "</head>\n<body>\n" + pv.rstrip() + "\n</body>\n</html>\n")
-print("parent.html", (out / "parent.html").stat().st_size, "bytes")
+# The homepage: the page links plus the practice numbers, read from the practice log for anyone who opens it.
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1OYzfO7FvsNIWos3e-a8ufGJmVo6hZluOlGRcvO0wV98/edit"
+links = json.dumps([{"href": f"{n}.html", "title": t, "blurb": b} for n, t, b in titles], ensure_ascii=False)
+home = ((kit / "home.src.html").read_text().replace("/*KIT_CSS*/", (kit / "kit.css").read_text())
+        .replace("__SEND_URL__", SEND_URL).replace("__SHEET_URL__", SHEET_URL).replace("/*LINKS*/[]", links))
+m = re.search(r"<title>(.*?)</title>\s*", home, re.S)
+home_title = m.group(1).strip()
+home = home[:m.start()] + home[m.end():]
+(out / "index.html").write_text(head(home_title) + "</head>\n<body>\n" + home.rstrip() + "\n</body>\n</html>\n")
+print("index.html", (out / "index.html").stat().st_size, "bytes")
 
-cards = "\n".join(
-    f'    <li><a href="{n}.html"><span class="t">{t}</span><span class="d">{b}</span></a></li>' for n, t, b in titles)
-index = head("Math Practice") + '''<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
-<style>
-  :root { --bg:#EDF1F7; --surface:#FFFFFF; --ink:#14223A; --muted:#55627A; --line:#CBD5E3; --accent:#2B50C8; }
-  @media (prefers-color-scheme: dark) { :root { color-scheme:dark; --bg:#0F1626; --surface:#18223A; --ink:#EEF2FA; --muted:#A3B0C8; --line:#2C3A58; --accent:#9DB4FF; } }
-  body { background:var(--bg); color:var(--ink); font:16px/1.5 Inter,system-ui,sans-serif; }
-  main { max-width:640px; margin:0 auto; padding:36px max(16px, env(safe-area-inset-right, 0px)) 56px max(16px, env(safe-area-inset-left, 0px)); }
-  h1 { font:700 34px/1.1 "Space Grotesk",system-ui,sans-serif; margin:0 0 8px; letter-spacing:-.01em; }
-  p { margin:0 0 24px; color:var(--muted); }
-  ul { list-style:none; margin:0; padding:0; display:grid; gap:12px; }
-  a { display:block; padding:16px 18px; background:var(--surface); border:1px solid var(--line); border-radius:12px; color:inherit; text-decoration:none; }
-  a:hover, a:focus-visible { border-color:var(--accent); outline:none; }
-  .t { display:block; font:700 19px/1.25 "Space Grotesk",system-ui,sans-serif; color:var(--accent); }
-  .d { display:block; margin-top:4px; color:var(--muted); font-size:15px; }
-  .note { margin:26px 0 0; font-size:14px; }
-</style>
-</head>
-<body>
-<main>
-  <h1>Math Practice</h1>
-  <p>Seven short practice pages. Each one keeps its own record on this device, under its Report tab.</p>
-  <ul>
-''' + cards + '''
-  </ul>
-  <p class="note">Practice is saved in this browser only. Use the same device and browser each day so the record stays in one place.</p>
-</main>
-</body>
-</html>
-'''
-(out / "index.html").write_text(index)
-print("index.html", len(index.encode()), "bytes")
+# The old parent link now just opens the homepage.
+(out / "parent.html").write_text(head("Math Practice") + '<meta http-equiv="refresh" content="0; url=./">\n'
+    '<script>location.replace("./")</script>\n</head>\n<body>\n<p style="padding:16px"><a href="./">Open the practice homepage</a></p>\n</body>\n</html>\n')
 
 # Keep the sources next to the built pages so the site can be rebuilt later.
 src = out / "src"
 src.mkdir(exist_ok=True)
-for f in [kit / "kit.css", kit / "kit.js", kit / "build.py", here / "site.py", here / "fifteen-values.html"] + ([url_file] if url_file.exists() else []) + [kit / "parent.src.html"] + sorted(kit.glob("*.page.html")):
+for f in [kit / "kit.css", kit / "kit.js", kit / "build.py", here / "site.py", here / "fifteen-values.html"] + ([url_file] if url_file.exists() else []) + [kit / "home.src.html"] + sorted(kit.glob("*.page.html")):
     if f.name == "demo.page.html":
         continue
     shutil.copy2(f, src / f.name)
