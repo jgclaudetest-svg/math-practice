@@ -610,7 +610,7 @@
     fb.className = 'feedback ' + (ok ? 'good' : 'bad');
     fb.innerHTML = ok ? '<b>Right.</b> That is the shape of ' + ps.fid + ' x. The curve is drawn through your points.'
       : '<b>Not quite.</b> ' + Kit.esc(plotWhy(ps.fid, ps.res.cols));
-    Kit.recAnswer('plot_' + ps.fid, ok, 0);      /* plots are untimed: no time is recorded for them */
+    Kit.recAnswer('plot_' + ps.fid, ok, null);      /* plots are untimed: no time is recorded for them */
     if (ps.sc) {
       if (ok) ps.sc.score++;
       if (ps.sc.i === 2) {

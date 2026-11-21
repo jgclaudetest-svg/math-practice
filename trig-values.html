@@ -1080,6 +1080,7 @@
       $('tab-' + n).setAttribute('aria-selected', n === v ? 'true' : 'false');
     });
     if (v === 'report') { flush(); renderReport(); }
+    if (v === 'cards' && !cs.locked) cs.t0 = performance.now();   /* time only the seconds spent on the card */
     if (push) { try { history.replaceState(null, '', '#' + v); } catch (e) { try { location.hash = v; } catch (e2) {} } }
   }
   Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) {
@@ -1090,7 +1091,7 @@
   window.addEventListener('pagehide', function () { flush(); autoNow(); });
 
   document.addEventListener('keydown', function (e) {
-    if (e.metaKey || e.ctrlKey || e.altKey || !e.key) return;
+    if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || !e.key) return;
     var tag = e.target && e.target.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
     var n = '123456789'.indexOf(e.key);

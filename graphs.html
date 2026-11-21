@@ -422,6 +422,8 @@ var Kit = (function () {
     return m + ':' + (s < 10 ? '0' : '') + s + '.' + d;
   }
   function num(x) { return (typeof x === 'number' && isFinite(x) && x > 0) ? x : 0; }
+  /* msOut(d): the day's time on right answers, scaled so untimed right answers (plots) do not pull the average down. */
+  function msOut(d) { var c = num(d.correct), t = c - num(d.untimed); return t > 0 ? Math.round(num(d.msCorrect) * c / t) : 0; }
   function dayNum(s) { var p = s.split('-'); return Math.round(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000); }
   function fmtDate(s) {
     var p = s.split('-');
@@ -445,7 +447,7 @@ var Kit = (function () {
       var age = Math.max(0, t0 - dayNum(d.date));
       var day = byDate[d.date] || (byDate[d.date] = { date: d.date, age: age, answered: 0, correct: 0, msCorrect: 0, activeMs: 0, tests: [] });
       day.answered += num(d.answered); day.correct += num(d.correct);
-      day.msCorrect += num(d.msCorrect); day.activeMs += num(d.activeMs);
+      day.msCorrect += msOut(d); day.activeMs += num(d.activeMs);
       (Array.isArray(d.tests) ? d.tests : []).forEach(function (t) {
         if (!t) return;
         var total = num(t.t), s = Math.min(num(t.s), total), ms = num(t.ms);
@@ -545,12 +547,13 @@ var Kit = (function () {
     function queued(c) { for (var q = 0; q < st.queue.length; q++) if (st.queue[q].c === c) return true; return false; }
     return {
       levels: lv,
-      /* next(filter): index of the next card; filter(i) optionally limits the pool */
-      next: function (filter) {
+      /* next(filter, all): index of the next card; filter(i) optionally limits the pool */
+      /* all = true: any queued miss counts as due now (used when a whole round is dealt at once) */
+      next: function (filter, all) {
         var okf = function (c) { return !filter || filter(c); };
         for (var q = 0; q < st.queue.length; q++) {
           var it = st.queue[q];
-          if (it.due <= st.count && it.c !== st.last && okf(it.c)) return st.queue.splice(q, 1)[0].c;
+          if ((all || (it.due <= st.count && it.c !== st.last)) && okf(it.c)) return st.queue.splice(q, 1)[0].c;
         }
         var w = [8, 4, 2, 1], pool = [], total = 0, c;
         for (c = 0; c < n; c++) { if (c === st.last || queued(c) || !okf(c)) continue; total += w[lv[c]]; pool.push([c, total]); }
@@ -625,7 +628,7 @@ var Kit = (function () {
     list.sort(function (x, y) { return y.w - x.w || y.n - x.n; });
     function top(arr) { return arr.sort(function (x, y) { return y[0] - x[0]; }).slice(0, 4).map(function (x) { return x[1]; }).join(', '); }
     var tests = (Array.isArray(d.tests) ? d.tests : []).slice(-10).map(function (t) { return num(t.s) + '.' + num(t.t) + '.' + Math.round(num(t.ms)); }).join('*');
-    var x = [String(d.date).replace(/-/g, ''), num(d.answered), num(d.correct), Math.round(num(d.msCorrect)), Math.round(num(d.activeMs)), num(d.done), num(d.total), tests,
+    var x = [String(d.date).replace(/-/g, ''), num(d.answered), num(d.correct), msOut(d), Math.round(num(d.activeMs)), num(d.done), num(d.total), tests,
       list.slice(0, maxItems).map(function (i) { return i.k + '.' + i.n + '.' + i.w + '.' + i.ms; }).join('*')].join('~');
     return { x: x, m: top(missed), s: top(slow) };
   }
@@ -720,12 +723,13 @@ var Kit = (function () {
     if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
     autoSend();
   }
-  /* recAnswer(key, ok, dtMs): one graded answer on one item. key must be an item key from init. */
+  /* recAnswer(key, ok, dtMs): one graded answer on one item. key must be an item key from init. dtMs null = untimed. */
   function recAnswer(key, ok, dt) {
     if (norec) return;
     var d = dayDoc(), a = d.items[key];
     if (!Array.isArray(a)) a = [0, 0, 0];
     var ms = Math.min(Math.round(num(dt)), C.dtCapMs);
+    if (ok && dt === null) d.untimed = num(d.untimed) + 1;
     d.items[key] = [num(a[0]) + 1, num(a[1]) + (ok ? 0 : 1), num(a[2]) + (ok ? ms : 0)];
     d.answered = num(d.answered) + 1;
     if (ok) { d.correct = num(d.correct) + 1; d.msCorrect = num(d.msCorrect) + ms; }
@@ -885,7 +889,7 @@ var Kit = (function () {
   /* digitKeys(getContainer): number keys 1-9 press the nth enabled .key in the container returned for the current view. */
   function digitKeys(getContainer) {
     document.addEventListener('keydown', function (e) {
-      if (e.metaKey || e.ctrlKey || e.altKey || !e.key) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || !e.key) return;
       var tag = e.target && e.target.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       var n = '123456789'.indexOf(e.key);
@@ -1395,7 +1399,7 @@ var Kit = (function () {
     fb.className = 'feedback ' + (ok ? 'good' : 'bad');
     fb.innerHTML = ok ? '<b>Right.</b> That is the shape of ' + ps.fid + ' x. The curve is drawn through your points.'
       : '<b>Not quite.</b> ' + Kit.esc(plotWhy(ps.fid, ps.res.cols));
-    Kit.recAnswer('plot_' + ps.fid, ok, 0);      /* plots are untimed: no time is recorded for them */
+    Kit.recAnswer('plot_' + ps.fid, ok, null);      /* plots are untimed: no time is recorded for them */
     if (ps.sc) {
       if (ok) ps.sc.score++;
       if (ps.sc.i === 2) {

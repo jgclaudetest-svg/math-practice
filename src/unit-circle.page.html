@@ -635,7 +635,7 @@
     bs.per[bs.sel] += now - bs.selAt;
     var n = nextOpen();
     if (n >= 0) bs.sel = n;
-    bs.step = 0; bs.selAt = now;
+    bs.step = (bs.pairs[bs.sel][0] !== null && bs.pairs[bs.sel][1] === null) ? 1 : 0; bs.selAt = now;
     blankPaint();
     if (n < 0) $('blank-check').focus();
   }

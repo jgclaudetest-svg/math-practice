@@ -292,7 +292,7 @@
       { s: 'Now the bottoms match. ' + verb + ' the tops.', parts: [ans] }
     ], [
       { e: sE(Q(w + sg * a, b)), slip: 'You ' + did + ' the ' + w + ' straight onto the top. First write ' + w + ' as ' + (w * b) + '/' + b + '.' },
-      { e: sE(Q(w + sg * a, b + 1)), slip: 'You treated ' + w + ' as ' + w + '/1 and combined tops and bottoms. Fractions need a common bottom first.' },
+      { e: sE(Q(w + sg * a, b + 1)), slip: 'You treated ' + w + ' as ' + w + '/1, ' + did + ' the tops and added the bottoms. Fractions need a common bottom first.' },
       { e: sE(Q(w * b - sg * a, b)), slip: 'You ' + (minus ? 'added' : 'subtracted') + '. Check the sign.' },
       { e: sE(Q(w * a, b)), slip: 'You multiplied. This one is ' + (minus ? 'a subtraction' : 'an addition') + '.' },
       { e: sE(Q(w * b + sg * a, b * b)), slip: 'You squared the bottom. When the bottoms match, the bottom stays the same.' }
@@ -915,6 +915,8 @@
   }
   function answerCheck(i) {
     if (ck.state !== 'run') return;
+    /* The next problem's buttons appear where the last tap landed, so ignore a second tap that comes right after a new problem. */
+    if (performance.now() - ck.q0 < 350) return;
     var o = ck.opts[i], ok = !!o.right;
     Kit.recAnswer(ck.p.sub, ok, performance.now() - ck.q0);
     ck.log.push({ p: ck.p, chosen: o, ok: ok });

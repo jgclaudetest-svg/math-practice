@@ -344,7 +344,7 @@
     { id: 'week2', title: 'Week 2', dates: 'Nov 30 to Dec 4', check: '15 mixed fraction and algebra problems.',
       how: 'Use a set from the tutor or the review section of the textbook. Count the right answers.', goal: '12 or more right.' },
     { id: 'week3', title: 'Week 3', dates: 'Dec 7 to 11', check: 'Sketch sin, cos and tan from memory.',
-      how: 'Blank page. Each sketch should show the key points: where it crosses zero, its high and low points, and the gaps for tangent.', goal: 'All three shapes right, with key points labeled.' },
+      how: 'Blank page. Each sketch should show the key points: where each one crosses zero, the high and low points of sin and cos, and the gaps for tangent.', goal: 'All three shapes right, with key points labeled.' },
     { id: 'week4', title: 'Week 4', dates: 'Dec 14 to 18', check: 'One-page final check from memory.',
       how: 'Blank page, no notes. It covers the values table, the unit circle, three graph sketches, the formulas, and a few mixed problems.', goal: 'Everything from memory.' }
   ];
@@ -377,7 +377,7 @@
         var left = 0;
         for (var i = 0; i < N; i++) if (ok(i)) left++;
         if (!left) break;
-        var c = deck.next(ok);
+        var c = deck.next(ok, true);
         if (!ok(c)) break;
         dealt[c] = 1; list.push(c);
       }
@@ -400,7 +400,7 @@
 
   function showCard() {
     var c = CARDS[round.cards[round.pos]];
-    round.shown = false; round.t0 = performance.now();
+    round.shown = false; round.t0 = performance.now(); round.readyAt = round.t0;
     $('stage').className = 'stage quiz';
     $('card-tag').textContent = 'Card ' + (round.pos + 1) + ' of ' + round.cards.length + ' · ' + c.tag;
     $('card-say').textContent = c.ask;
@@ -412,7 +412,8 @@
   }
 
   function reveal() {
-    if (!round || round.shown) return;
+    /* Show answer appears where the mark buttons were, so ignore a tap that lands right after the next card appears. */
+    if (!round || round.shown || performance.now() - (round.readyAt || 0) < 350) return;
     var c = CARDS[round.cards[round.pos]];
     round.shown = true; round.shownAt = performance.now();
     $('ans-sym').innerHTML = Kit.math(c.ansM);
